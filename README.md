@@ -1,12 +1,12 @@
 # Reporte Ciudadano
 
-Base Flutter del prototipo para consultar problemas persistentes de El Alto. Interfaz en español, orientada a Android. Todos los hechos, referencias, personas y gestiones son ficticios y están identificados como **Datos de demostración**.
+Prototipo Flutter **0.2.0** para consultar y enviar problemas persistentes de El Alto. Interfaz en español, orientada a Android. Usa únicamente datos ficticios, identificados como **Datos de demostración**.
 
 ## Ejecutar
 
-Entorno utilizado: Flutter **3.47.3** estable y Dart **3.13.3**. Se necesita el SDK Android y un teléfono con depuración USB o un emulador iniciado. No se necesitan cuentas, claves ni servicios externos para utilizar los datos locales.
+Entorno utilizado: Flutter **3.47.3** estable y Dart **3.13.3**. Se necesita el SDK Android y un teléfono con depuración USB o un emulador iniciado. No se necesitan cuentas, claves ni servicios externos para utilizar el prototipo.
 
-Desde la raíz del repositorio:
+Desde la raíz:
 
 ```powershell
 flutter pub get
@@ -14,68 +14,95 @@ flutter devices
 flutter run -d <id-del-dispositivo-android>
 ```
 
-Sustituir el identificador por el mostrado en `flutter devices`. Si no hay un dispositivo Android conectado, iniciar uno desde Android Studio o conectar un teléfono. Solo está generada la plataforma Android; no se incluye un destino web, Windows o iOS.
-
-Para generar un APK de desarrollo:
+Sustituir el identificador por el mostrado en `flutter devices`. Solo está generada la plataforma Android. Para producir un APK de desarrollo:
 
 ```powershell
 flutter build apk --debug
 ```
 
-El resultado se guarda en `build/app/outputs/flutter-apk/app-debug.apk`. Es una compilación de demostración, sin configuración de publicación en tiendas.
-
-La compilación comprobada en esta entrega fue para **Android x64**, apropiada para emuladores de esa arquitectura:
+El resultado se guarda en `build/app/outputs/flutter-apk/app-debug.apk`. Para compilar exclusivamente para un emulador Android x64:
 
 ```powershell
 flutter build apk --debug --target-platform android-x64
 ```
 
-El APK generado actualmente es x64, no para teléfonos ARM. La compilación general se interrumpió durante la descarga lenta de los motores ARM de Flutter; para un teléfono ARM hay que ejecutar la compilación general y permitir que esas descargas terminen.
+Un APK x64 no sirve para teléfonos ARM. La primera compilación de cada arquitectura puede requerir descargar motores Flutter y dependencias Android. No hay configuración de publicación en tiendas.
 
-## Qué incluye esta entrega
+## Segunda entrega: reportar, borradores y pendientes
 
-- Tema Material con Roboto, paleta, tipografía, espaciado y radios basados en el diseño v0.2.
-- Navegación Explorar, Reportar, Siguiendo y Perfil. Reportar abre una ruta sin barra inferior; los últimos tres destinos explican honestamente las funciones todavía no implementadas.
-- Explorar en lista, búsqueda local por zona/referencia, abiertos por defecto y opción de incluir soluciones verificadas. Orden por observación más reciente, sin GPS.
-- Conservación de búsqueda, filtro y desplazamiento al volver del detalle o cambiar de destino.
-- Detalle con categoría, descripción, autoría, ubicación textual ficticia, fechas, conteo simulado de observadores, ausencia de fotos, gestiones, actualizaciones, comentarios e historial públicos.
-- Carga, error con reintento, búsqueda vacía y reporte no disponible.
-- Seis reportes públicos de ejemplo: bache, acera con gestión, luminaria con solución reportada, rampa con solución verificada, señalización con edición privada y banco con autoría retirada. La rampa se muestra al incluir soluciones verificadas.
-- Casos internos pendiente, oculto y duplicado para comprobar que no aparecen en consultas públicas.
+- Acceso simulado por correo/código o Google, con alias ficticio y sin credenciales reales.
+- Reporte en tres pasos: datos y adjuntos opcionales → punto manual o GPS simulado y coincidencias públicas → resumen editable y envío a revisión.
+- Validación de categoría, título, descripción, fecha no futura, coordenadas, declaración de El Alto, referencia y máximo de cinco adjuntos simulados. Los límites propuestos están centralizados en `ReportRules`.
+- Borradores autoguardados al cambiar campos y paso, con guardado explícito y recuperación desde Perfil. Al salir con cambios se puede guardar, descartar o seguir editando.
+- Persistencia local de borradores y envíos pendientes tras reiniciar la aplicación. La sesión se reinicia como visitante; entrar con el mismo proveedor de demostración permite recuperar sus datos.
+- Coincidencias por categoría y distancia (radio inicial configurable de 150 m), solo entre reportes públicos abiertos. Abrir el detalle conserva el borrador y no envía nada. Se puede continuar como problema distinto. Confirmar un reporte existente queda para la entrega de participación.
+- Envíos con estado **Pendiente de aprobación**, accesibles desde Perfil → Mis envíos. No se incorporan a Explorar ni a consultas públicas por ID.
+- Reintentos con una identidad estable por borrador: un doble envío o una respuesta perdida no generan otro reporte.
+- Mensajes de revisión de 08:00 a 20:00 en Bolivia, sin prometer un plazo de aprobación.
 
-## Qué está simulado y qué falta
+Se conserva la primera entrega: tema visual, navegación principal, lista con búsqueda por zona/referencia, filtro de soluciones verificadas, detalle público, errores/reintentos y seis reportes públicos de ejemplo. Siguiendo sigue siendo una pantalla informativa.
+
+## Recorrido de demostración
+
+1. Abrir **Reportar** como visitante.
+2. Escribir un alias ficticio. Elegir **Simular acceso con Google**, o **Simular acceso por correo** e introducir el código visible **123456**. No se conecta a Google ni se envía correo.
+3. Seleccionar categoría y completar título (10–100 caracteres) y descripción (20–1.500). Dejar el momento observado en Ahora o elegir uno anterior en hora de Bolivia. Las fotos son opcionales.
+4. En el segundo paso, introducir coordenadas manualmente o pulsar **Usar mi ubicación · simulada**. El ejemplo `-16.5000, -68.1600` con categoría Baches y calzada produce una coincidencia ficticia. Declarar El Alto; no hay validación territorial automática.
+5. Revisar coincidencias y continuar como problema distinto, si corresponde. Revisar el resumen y pulsar **Enviar a revisión**.
+6. Consultar **Ver estado de mi envío**, o volver a **Perfil → Mis envíos**. El envío sigue fuera de Explorar.
+
+### Escenarios de recuperación
+
+- **Borrador:** escribir datos, volver atrás y elegir Guardar borrador. Recuperarlo desde Perfil. También se puede cerrar y abrir la app y entrar con el mismo proveedor simulado.
+- **GPS rechazado:** activar ese escenario antes de solicitar ubicación. El formulario mantiene la entrada manual y no vuelve a pedir GPS durante ese recorrido.
+- **Sin conexión / Fallo de envío:** elegir el escenario en el resumen y enviar. El borrador permanece guardado. Cambiar a Envío normal y reintentar explícitamente.
+- **Respuesta perdida:** el envío queda recibido localmente, pero se muestra incertidumbre. Pulsar Recuperar envío devuelve el mismo registro; no crea un duplicado. También aparece en Mis envíos tras reiniciar.
+- **Dos cuentas:** correo y Google representan dos identidades de demostración separadas. Cerrar sesión oculta sus borradores y pendientes; entrar con el otro proveedor no los muestra. Esto prueba comportamiento de interfaz, no seguridad de producción.
+- **Fotos:** Simular cámara/galería agrega fichas de adjuntos que se pueden quitar; no crea ni accede a fotografías reales.
+
+## Qué funciona, qué está simulado y qué falta
 
 | Capacidad | Estado |
 | --- | --- |
-| Navegación, búsqueda, filtros y detalle | Funcionan localmente. |
-| Reportes, observaciones, fechas, conteos, gestiones e historial | Datos estáticos de demostración en memoria; no representan hechos reales. |
-| Aprobación, ocultamiento y solución verificada | Estados precargados. No hay operaciones de moderación. |
-| Consulta pública | Filtrado local y proyección sin revisión pendiente; no constituye autorización de servidor. |
-| Sesión | Consulta como visitante, sin autenticación ni recolección de credenciales. |
-| Reportar, borradores, confirmar, seguir, aportar y perfil personal | No implementados en esta base; no hay botones de envío que simulen éxito. |
-| Mapas, GPS, cámara y fotos | No integrados. Ubicación textual ficticia y «Sin foto adjunta». No se solicitan permisos. |
-| Notificaciones, backend, páginas compartibles e indexación | No implementados. |
-| Persistencia | No hay base de datos ni almacenamiento permanente; reiniciar restaura los datos y filtros iniciales. |
+| Navegación, formularios, búsqueda y consulta | Funcionan localmente. |
+| Guardado y recuperación | Almacenamiento local real con preferencias privadas de Android; sin servidor, sincronización ni almacenamiento seguro de datos sensibles. |
+| Acceso por correo/Google | Simulado, sin autenticación externa. Cada proveedor corresponde a una cuenta local fija. |
+| Envío a revisión | Transacción local simulada. No se comunica con moderadores ni autoridades reales. |
+| GPS | Adaptador simulado: punto fijo o permiso rechazado. No usa la ubicación del dispositivo. |
+| Cámara/galería | Fichas simuladas, sin fotografías ni acceso al dispositivo. No se procesa EXIF porque no se reciben imágenes reales. |
+| Territorio y coincidencias | Coordenadas de demostración y cálculo local de cercanía. Sin mapas, geocodificación ni límites oficiales. |
+| Moderación, gestiones y solución | Estados precargados en reportes públicos; no hay operaciones de revisión aún. |
+| Confirmar, seguir, aportar, notificaciones y lectura compartida | Pendientes de próximas entregas. |
+| Seguridad del piloto | No implementada: la separación local de cuentas no sustituye autorización de servidor. |
 
-No se incluyen funciones pospuestas en la especificación, como alertas temporales, zonas seguidas, selector de ciudades, rankings o chat. Esta entrega es una parte de la primera etapa, no el prototipo completo ni un piloto habilitado.
+Los reportes públicos precargados son ficticios y se restauran al arrancar. Los borradores y envíos creados por el usuario persisten únicamente en este dispositivo; borrar los datos de la app los elimina. El prototipo no recoge credenciales reales ni pide permisos GPS/cámara. No hay envío automático en segundo plano.
 
-## Organización y sustitución del repositorio
+No se incluyen funciones pospuestas como alertas temporales, zonas seguidas, selector de ciudades, rankings, chat o publicación web. Esta entrega no completa el prototipo ni habilita un piloto.
+
+## Organización y puntos de sustitución
 
 ```text
 lib/
-  main.dart                         # Composición: inyecta DemoReportRepository
-  app.dart                          # Aplicación, idioma y navegación principal
-  core/theme/app_theme.dart         # Tema y constantes visuales
-  features/reports/
-    domain/report.dart              # Modelo, revisión, disposición y seguimiento
-    domain/report_repository.dart   # Contrato de consultas públicas asíncronas
-    data/demo_report_repository.dart
-    presentation/                   # Explorar, detalle y componentes
+  main.dart                    # Carga persistencia y compone dependencias; permite reintentar si falla la lectura
+  app.dart                     # Idioma, tema y navegación
+  core/
+    theme/app_theme.dart
+    geo_point.dart             # Coordenadas y distancia
+  features/reports/            # Repositorio de lectura pública, Explorar y detalle
+  features/submissions/
+    domain/                    # Borradores, reglas, sesión, contratos de repositorios y adaptadores
+    data/                      # Repositorio local serializado y almacenamiento en preferencias
+    presentation/              # Acceso, formulario, Perfil y estado de envío
+    prototype_services.dart    # Inyección de dependencias sustituibles
 ```
 
-Para conectar otra fuente de datos, implementar `ReportRepository` e inyectarla en `ReporteCiudadanoApp` desde `main.dart`. Las pantallas no importan datos de demostración. `listPublicReports` y `getPublicReport` deben devolver exclusivamente versiones aprobadas y visibles, sin revisiones privadas ni notas internas. Un ID no público devuelve `null`; los errores se muestran con reintento.
+- `ReportRepository`: consultas exclusivamente públicas; nunca entregar revisiones privadas.
+- `SessionRepository`: identidad actual y acceso. Implementación de demostración sin credenciales.
+- `SubmissionRepository`: crear/guardar/descartar borradores, enviar y consultar envíos propios. El identificador del borrador funciona como clave de idempotencia.
+- `DraftStorage`: lectura y escritura de una instantánea JSON versionada. `PreferencesDraftStorage` usa un canal de plataforma hacia las preferencias privadas de Android; `MemoryDraftStorage` se usa en pruebas. La implementación Android escribe fuera del hilo de interfaz y confirma la escritura antes de devolver éxito. Las escrituras se serializan y se actualiza el estado observable después de guardarlo. Un autoguardado tardío no recrea un borrador enviado.
+- `LocationAdapter` y `PhotoAdapter`: sustituibles sin incorporar permisos ni dependencias nativas de cámara/GPS en esta entrega.
 
-El modelo separa revisión editorial, disposición pública y seguimiento. La edición pendiente no sustituye la versión pública. Las fechas del ejemplo son UTC y se muestran con UTC−4, correspondiente a `America/La_Paz`; este formateador no pretende resolver zonas horarias de otros territorios. Una futura fuente real deberá aplicar permisos y filtrado en el servidor.
+Inyectar implementaciones mediante `PrototypeServices` y `ReporteCiudadanoApp`. El modelo público sigue separando revisión editorial, disposición pública y seguimiento. Las fechas se guardan en UTC y se muestran en UTC−4 (`America/La_Paz`). El almacenamiento actual no está diseñado para información sensible ni para un piloto con usuarios reales.
 
 ## Verificación
 
@@ -84,14 +111,15 @@ flutter analyze
 flutter test
 ```
 
-Pruebas de repositorio: exclusión de pendientes/ocultos/duplicados por lista e ID, conservación de versión aprobada, ausencia de revisión privada en la respuesta, autoría anónima, separación de gestión y solución, conversión de fecha a hora de Bolivia.
+La batería incluye regresión de consulta pública; validación de formularios; acceso por correo y Google; guardado, recuperación y descarte; fallos de almacenamiento; separación de cuentas; fecha de Bolivia; coincidencias públicas; envío sin fotos; GPS rechazado; desconexión y reintento; concurrencia y respuesta perdida sin duplicados. Los widgets recorren lista/detalle y formulario en 360 × 800, 390 × 844 y 412 × 915 con texto al 200 %.
 
-Pruebas de widgets: lista → detalle → regreso, conservación de búsqueda, navegación principal, filtro de soluciones, búsqueda vacía, error/reintento, detalle no público y recorridos con texto al 200 % en 360 × 800, 390 × 844 y 412 × 915. Detectaron y permitieron corregir desbordamientos del encabezado y la acción de las tarjetas.
+Resultados automáticos de la segunda entrega: `flutter analyze` sin incidencias y **31 pruebas aprobadas**.
 
-Resultados de esta entrega: `flutter analyze` sin incidencias, **12 pruebas aprobadas** y compilación de APK Android x64 completada. Gradle emitió advertencias del acceso nativo de Java y de la versión XML de las herramientas del SDK, sin impedir esa compilación. No se ha realizado una prueba manual en teléfono/emulador ni una auditoría con lector de pantalla. Los diez recorridos del prototipo completo todavía no son ejecutables porque los flujos de envío, moderación y participación quedan para siguientes entregas.
+La recuperación tras reinicio se prueba recreando el repositorio sobre el almacenamiento de prueba. Esto no sustituye una prueba manual del cierre y apertura en un teléfono ni una auditoría con lector de pantalla. Los recorridos de moderación, participación y solución del prototipo completo aún no son ejecutables.
 
 ## Documentación de producto
 
 - [Instrucciones para agentes](AGENTS.md)
 - [Especificación v0.2](docs/01_especificacion_proyecto_v0.2.md)
 - [Diseño del prototipo v0.2](docs/02_prototipo_flutter_v0.2.md)
+

@@ -1,3 +1,5 @@
+import '../../../core/geo_point.dart';
+
 enum ReviewStatus { pending, correctionRequested, approved, rejected }
 
 enum PublicDisposition { visible, hidden, duplicate }
@@ -50,6 +52,7 @@ class Report {
     this.updates = const [],
     this.comments = const [],
     this.history = const [],
+    this.point,
   });
 
   final String id;
@@ -69,6 +72,7 @@ class Report {
   final List<PublicEvent> updates;
   final List<PublicEvent> comments;
   final List<PublicEvent> history;
+  final GeoPoint? point;
 
   bool get isPublic =>
       disposition == PublicDisposition.visible &&
@@ -92,6 +96,7 @@ class Report {
     updates: updates,
     comments: comments,
     history: history,
+    point: point,
   );
 }
 

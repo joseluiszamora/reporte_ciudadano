@@ -5,10 +5,30 @@ import 'core/theme/app_theme.dart';
 import 'features/reports/domain/report_repository.dart';
 import 'features/reports/presentation/explore_page.dart';
 import 'features/reports/presentation/report_widgets.dart';
+import 'features/submissions/prototype_services.dart';
+import 'features/submissions/presentation/profile_page.dart';
 
-class ReporteCiudadanoApp extends StatelessWidget {
-  const ReporteCiudadanoApp({required this.repository, super.key});
+class ReporteCiudadanoApp extends StatefulWidget {
+  const ReporteCiudadanoApp({
+    required this.repository,
+    this.services,
+    super.key,
+  });
   final ReportRepository repository;
+  final PrototypeServices? services;
+  @override
+  State<ReporteCiudadanoApp> createState() => _ReporteCiudadanoAppState();
+}
+
+class _ReporteCiudadanoAppState extends State<ReporteCiudadanoApp> {
+  late final PrototypeServices _services =
+      widget.services ?? PrototypeServices.memory();
+  @override
+  void dispose() {
+    if (widget.services == null) _services.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Reporte Ciudadano',
@@ -17,13 +37,14 @@ class ReporteCiudadanoApp extends StatelessWidget {
     locale: const Locale('es', 'BO'),
     supportedLocales: const [Locale('es', 'BO')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    home: _Home(repository: repository),
+    home: _Home(repository: widget.repository, services: _services),
   );
 }
 
 class _Home extends StatefulWidget {
-  const _Home({required this.repository});
+  const _Home({required this.repository, required this.services});
   final ReportRepository repository;
+  final PrototypeServices services;
   @override
   State<_Home> createState() => _HomeState();
 }
@@ -32,21 +53,7 @@ class _HomeState extends State<_Home> {
   int _selected = 0;
   void _select(int index) {
     if (index == 1) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => Scaffold(
-            appBar: AppBar(title: const Text('Reportar')),
-            body: const SingleChildScrollView(
-              child: ContentMessage(
-                title: 'Documentar un problema',
-                message:
-                    'En esta entrega puedes explorar reportes de demostración. '
-                    'El formulario de envío todavía no está implementado. No se envían datos.',
-              ),
-            ),
-          ),
-        ),
-      );
+      openReportForm(context, widget.services, widget.repository);
     } else {
       setState(() => _selected = index);
     }
@@ -73,14 +80,9 @@ class _HomeState extends State<_Home> {
               ),
             ),
           ),
-          const SingleChildScrollView(
-            child: ContentMessage(
-              title: 'Estás explorando como visitante',
-              message:
-                  'Puedes consultar contenido público de demostración sin cuenta. '
-                  'El acceso y el perfil personal todavía no están implementados. '
-                  'No se recogen credenciales ni datos personales.',
-            ),
+          ProfilePage(
+            services: widget.services,
+            publicReports: widget.repository,
           ),
         ],
       ),

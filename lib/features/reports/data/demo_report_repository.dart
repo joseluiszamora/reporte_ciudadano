@@ -1,3 +1,4 @@
+import '../../../core/geo_point.dart';
 import '../domain/report.dart';
 import '../domain/report_repository.dart';
 
@@ -39,6 +40,7 @@ List<Report> demoReports() {
     bool editing = false,
   }) => Report(
     id: id,
+    point: GeoPoint(-16.5000 - int.parse(id) * 0.0001, -68.1600),
     category: category,
     zone: 'Zona de demostración $id',
     reference:

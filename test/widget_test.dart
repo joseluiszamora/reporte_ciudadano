@@ -63,7 +63,7 @@ void main() {
     await tester.tap(find.text('Reportar'));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.text('Documentar un problema'), findsOneWidget);
+    expect(find.text('Elige tu alias público'), findsOneWidget);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);

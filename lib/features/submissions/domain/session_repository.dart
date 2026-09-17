@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum DemoProvider { email, google }
+enum DemoProvider { email, google, neighbor }
 
 enum DemoRole { citizen, moderator }
 

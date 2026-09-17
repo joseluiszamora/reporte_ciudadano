@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../community/presentation/contribution_page.dart';
+
 import '../../reports/domain/report_repository.dart';
 import '../../reports/domain/report.dart';
 import '../../reports/presentation/report_widgets.dart';
@@ -66,6 +68,13 @@ class ProfilePage extends StatelessWidget {
               child: const Text('Acceso simulado'),
             ),
             _moderationAccess(),
+            OutlinedButton(
+              onPressed: () => services.session.signIn(
+                DemoProvider.neighbor,
+                'Vecino de demostración',
+              ),
+              child: const Text('Tercera cuenta ciudadana · demo'),
+            ),
           ],
         );
       }
@@ -83,6 +92,7 @@ class ProfilePage extends StatelessWidget {
                   builder: (_) => ModerationPage(
                     repository: services.submissions,
                     session: services.session,
+                    community: services.community,
                   ),
                 ),
               ),
@@ -105,7 +115,11 @@ class ProfilePage extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           Text(
-            'Cuenta ${user.provider.name == 'email' ? 'correo' : 'Google'} de demostración. '
+            'Cuenta ${switch (user.provider) {
+              DemoProvider.email => 'correo',
+              DemoProvider.google => 'Google',
+              DemoProvider.neighbor => 'vecino adicional',
+            }} de demostración. '
             'Los borradores y envíos se guardan solo en este dispositivo. No uses información sensible.',
           ),
           OutlinedButton(
@@ -113,6 +127,22 @@ class ProfilePage extends StatelessWidget {
             child: const Text('Cerrar sesión simulada'),
           ),
           _moderationAccess(),
+          OutlinedButton(
+            onPressed: () => services.session.signIn(
+              DemoProvider.neighbor,
+              'Vecino de demostración',
+            ),
+            child: const Text('Tercera cuenta ciudadana · demo'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => const MyContributionsPage(),
+              ),
+            ),
+            child: const Text('Mis aportes'),
+          ),
           Text(
             'Borradores (${drafts.length})',
             style: Theme.of(context).textTheme.titleLarge,

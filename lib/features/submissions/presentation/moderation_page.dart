@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../community/domain/community_repository.dart';
+import '../../community/presentation/contribution_review_page.dart';
+
 import '../../reports/domain/report.dart';
 import '../../reports/presentation/report_widgets.dart';
 import '../domain/session_repository.dart';
@@ -12,10 +15,12 @@ class ModerationPage extends StatefulWidget {
   const ModerationPage({
     required this.repository,
     required this.session,
+    this.community,
     super.key,
   });
   final SubmissionRepository repository;
   final SessionRepository session;
+  final CommunityRepository? community;
   @override
   State<ModerationPage> createState() => _ModerationPageState();
 }
@@ -95,6 +100,14 @@ class _ModerationPageState extends State<ModerationPage> {
             if (queue.isEmpty)
               const Text('No hay envíos pendientes para este filtro.'),
             for (final item in queue) card(item),
+            if (widget.community != null ||
+                widget.repository is CommunityRepository)
+              ContributionQueue(
+                repository:
+                    widget.community ??
+                    widget.repository as CommunityRepository,
+                session: widget.session,
+              ),
             Text(
               'Reportes y disposición pública',
               style: Theme.of(context).textTheme.titleLarge,

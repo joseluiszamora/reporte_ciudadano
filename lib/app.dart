@@ -5,7 +5,8 @@ import 'core/theme/app_theme.dart';
 import 'features/reports/data/moderated_report_repository.dart';
 import 'features/reports/domain/report_repository.dart';
 import 'features/reports/presentation/explore_page.dart';
-import 'features/reports/presentation/report_widgets.dart';
+import 'features/community/presentation/community_scope.dart';
+import 'features/community/presentation/community_pages.dart';
 import 'features/submissions/prototype_services.dart';
 import 'features/submissions/presentation/profile_page.dart';
 
@@ -27,6 +28,7 @@ class _ReporteCiudadanoAppState extends State<ReporteCiudadanoApp> {
   late final ModeratedReportRepository _public = ModeratedReportRepository(
     widget.repository,
     _services.submissions,
+    community: _services.community,
   );
   @override
   void dispose() {
@@ -43,6 +45,8 @@ class _ReporteCiudadanoAppState extends State<ReporteCiudadanoApp> {
     locale: const Locale('es', 'BO'),
     supportedLocales: const [Locale('es', 'BO')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    builder: (context, child) =>
+        CommunityScope(services: _services, reports: _public, child: child!),
     home: _Home(repository: _public, services: _services),
   );
 }
@@ -70,22 +74,23 @@ class _HomeState extends State<_Home> {
     appBar: AppBar(
       toolbarHeight: 56 * MediaQuery.textScalerOf(context).scale(1),
       title: const Text('Reporte Ciudadano', maxLines: 2),
+      actions: [
+        IconButton(
+          tooltip: 'Notificaciones simuladas',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(builder: (_) => const NotificationsPage()),
+          ),
+          icon: const Icon(Icons.notifications_outlined),
+        ),
+      ],
     ),
     body: SafeArea(
       child: IndexedStack(
         index: _selected == 0 ? 0 : _selected - 1,
         children: [
           ExplorePage(repository: widget.repository),
-          SingleChildScrollView(
-            child: ContentMessage(
-              title: 'Aún no sigues reportes',
-              message: 'El seguimiento personal no está implementado en esta entrega.',
-              action: FilledButton(
-                onPressed: () => _select(0),
-                child: const Text('Explorar reportes'),
-              ),
-            ),
-          ),
+          FollowingPage(onExplore: () => _select(0)),
           ProfilePage(
             services: widget.services,
             publicReports: widget.repository,

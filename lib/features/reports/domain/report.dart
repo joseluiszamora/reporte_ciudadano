@@ -55,6 +55,7 @@ class Report {
     this.comments = const [],
     this.history = const [],
     this.point,
+    this.lastCommunityObservedAt,
   });
 
   final String id;
@@ -75,6 +76,34 @@ class Report {
   final List<PublicEvent> comments;
   final List<PublicEvent> history;
   final GeoPoint? point;
+  final DateTime? lastCommunityObservedAt;
+
+  Report withCommunity({
+    required int confirmations,
+    required TrackingStatus tracking,
+    required List<PublicEvent> comments,
+    required List<PublicEvent> updates,
+    DateTime? lastObservation,
+  }) => Report(
+    id: id,
+    category: category,
+    zone: zone,
+    reference: reference,
+    authorAlias: authorAlias,
+    observedAt: observedAt,
+    submittedAt: submittedAt,
+    publishedAt: publishedAt,
+    tracking: tracking,
+    publicRevision: publicRevision,
+    disposition: disposition,
+    confirmations: confirmations,
+    management: management,
+    comments: comments,
+    updates: updates,
+    history: history,
+    point: point,
+    lastCommunityObservedAt: lastObservation,
+  );
 
   bool get isPublic =>
       disposition == PublicDisposition.visible &&
@@ -99,6 +128,7 @@ class Report {
     comments: comments,
     history: history,
     point: point,
+    lastCommunityObservedAt: lastCommunityObservedAt,
   );
 }
 

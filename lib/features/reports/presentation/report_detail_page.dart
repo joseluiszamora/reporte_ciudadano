@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../community/presentation/community_pages.dart';
+import '../../community/presentation/community_scope.dart';
+import '../../submissions/domain/session_repository.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../domain/report.dart';
 import '../domain/report_repository.dart';
@@ -19,6 +23,27 @@ class ReportDetailPage extends StatefulWidget {
 
 class _ReportDetailPageState extends State<ReportDetailPage> {
   late Future<Report?> _report;
+  bool _visitScheduled = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_visitScheduled) return;
+    _visitScheduled = true;
+    final scope = CommunityScope.maybeOf(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted ||
+          scope == null ||
+          scope.services.session.current?.role != DemoRole.citizen) {
+        return;
+      }
+      try {
+        await scope.services.community.visitFollowed(widget.reportId);
+      } catch (_) {
+        /* Una visita fallida conserva la marca de novedad. */
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -139,6 +164,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                       ),
                     const SizedBox(height: AppSpace.large),
                     Text(report.publicRevision!.description),
+                    ParticipationPanel(report: report),
                     const SizedBox(height: AppSpace.large),
                     _section(
                       context,
@@ -163,6 +189,12 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                           'Hora de Bolivia · America/La_Paz\n'
                           '${report.confirmations} observadores independientes (simulados)',
                     ),
+                    if (report.lastCommunityObservedAt != null)
+                      _section(
+                        context,
+                        'Última observación comunitaria',
+                        '${boliviaDate(report.lastCommunityObservedAt!)} · hora de Bolivia\nSe muestra por separado del momento observado del reporte.',
+                      ),
                     _events(
                       context,
                       'Gestiones',

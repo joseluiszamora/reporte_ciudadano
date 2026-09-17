@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
+import 'features/reports/data/moderated_report_repository.dart';
 import 'features/reports/domain/report_repository.dart';
 import 'features/reports/presentation/explore_page.dart';
 import 'features/reports/presentation/report_widgets.dart';
@@ -23,8 +24,13 @@ class ReporteCiudadanoApp extends StatefulWidget {
 class _ReporteCiudadanoAppState extends State<ReporteCiudadanoApp> {
   late final PrototypeServices _services =
       widget.services ?? PrototypeServices.memory();
+  late final ModeratedReportRepository _public = ModeratedReportRepository(
+    widget.repository,
+    _services.submissions,
+  );
   @override
   void dispose() {
+    _public.dispose();
     if (widget.services == null) _services.dispose();
     super.dispose();
   }
@@ -37,7 +43,7 @@ class _ReporteCiudadanoAppState extends State<ReporteCiudadanoApp> {
     locale: const Locale('es', 'BO'),
     supportedLocales: const [Locale('es', 'BO')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    home: _Home(repository: widget.repository, services: _services),
+    home: _Home(repository: _public, services: _services),
   );
 }
 

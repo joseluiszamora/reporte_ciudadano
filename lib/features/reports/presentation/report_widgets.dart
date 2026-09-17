@@ -83,7 +83,11 @@ class ReportCard extends StatelessWidget {
               'Última observación: ${boliviaDate(report.observedAt)}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            const Text('Sin foto adjunta'),
+            Text(
+              report.publicRevision!.demoAttachments.isEmpty
+                  ? 'Sin foto adjunta'
+                  : '${report.publicRevision!.demoAttachments.length} adjuntos simulados aprobados',
+            ),
             if (report.management.isNotEmpty) ...[
               const SizedBox(height: AppSpace.small),
               Text('Última gestión: ${report.management.last.text}'),

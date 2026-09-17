@@ -1,7 +1,7 @@
 name: reporte_ciudadano
 description: Prototipo ciudadano de consulta de problemas persistentes de El Alto.
 publish_to: 'none'
-version: 0.2.0+2
+version: 0.3.0+3
 
 environment:
   sdk: ^3.13.3

@@ -20,10 +20,12 @@ class ReportRevision {
     required this.title,
     required this.description,
     required this.status,
+    this.demoAttachments = const [],
   });
   final String title;
   final String description;
   final ReviewStatus status;
+  final List<String> demoAttachments;
 }
 
 /// Solo contiene información apta para lectura pública, no notas internas.

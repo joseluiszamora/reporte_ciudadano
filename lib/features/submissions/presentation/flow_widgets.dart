@@ -3,15 +3,16 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 
 class FlowBody extends StatelessWidget {
-  const FlowBody({required this.children, super.key});
+  const FlowBody({required this.children, this.maxWidth = 760, super.key});
   final List<Widget> children;
+  final double maxWidth;
   @override
   Widget build(BuildContext context) => SafeArea(
     child: SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
+          constraints: BoxConstraints(maxWidth: maxWidth),
           child: Padding(
             padding: const EdgeInsets.all(AppSpace.medium),
             child: Column(

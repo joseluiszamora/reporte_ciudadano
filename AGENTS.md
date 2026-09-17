@@ -13,7 +13,7 @@ Las decisiones explícitas del promotor prevalecen sobre los documentos iniciale
 
 ## Estado del repositorio y objetivo
 
-El repositorio contiene documentación en `docs/` y un prototipo Flutter para Android: tema, navegación, lista/detalle públicos, acceso simulado, envío en tres pasos, borradores persistidos localmente y consulta de pendientes propios. Consulta `README.md` para el alcance implementado y la ejecución. No hay infraestructura ni integraciones externas reales; no describas componentes planeados como existentes.
+El repositorio contiene documentación en `docs/` y un prototipo Flutter para Android: tema, navegación, lista/detalle públicos, acceso simulado, envío en tres pasos, borradores persistidos, revisión y corrección de envíos, comparación de versiones, publicación local, ocultamiento y duplicados. La moderación opera sobre envíos creados en el dispositivo; el catálogo inicial sigue siendo de lectura. Consulta `README.md` y `docs/03_entrega_revision.md` para el alcance implementado y la ejecución. No hay infraestructura ni integraciones externas reales; no describas componentes planeados como existentes.
 
 La etapa en curso es un prototipo navegable en Flutter, en español y orientado a Android, con datos ficticios y repositorios sustituibles. La base actual no completa todos los flujos de esa etapa. Construir el prototipo no autoriza contratar infraestructura ni abrir un piloto real.
 
@@ -32,6 +32,7 @@ El propósito es documentar problemas urbanos persistentes y seguir gestiones ci
 - Separar presentación, dominio y datos cuando la lógica lo justifique; evitar capas vacías y reglas de negocio duplicadas en widgets.
 - Mantener adaptadores sustituibles para datos, sesión, ubicación e imágenes. Centralizar colores, tipografía y espaciado en el tema.
 - La segunda entrega usa `PrototypeServices` para inyectar sesión, envíos y adaptadores; `DraftStorage` separa persistencia de las reglas. Conservar borradores y pendientes al reiniciar, serializar escrituras y mantener la clave de idempotencia del borrador en reintentos. Los datos privados nunca se agregan automáticamente al repositorio público.
+- La tercera entrega conserva revisiones con un `reportId` estable y un `baseRevisionId` para detectar ediciones obsoletas. `PublicationRecord` separa la revisión aprobada de la última enviada; decidir, publicar y registrar auditoría se persisten juntos en JSON v2, con migración desde v1. `ModeratedReportRepository` comparte la proyección pública de lista, detalle y coincidencias. La identidad moderadora de demostración es independiente de las dos ciudadanas.
 - Supabase/PostgreSQL/PostGIS/Auth/Storage y FCM son propuestas para el piloto. El proveedor de mapas y las tecnologías de web pública y panel siguen pendientes; no asumir React/Next.js como requisito.
 - Separar revisión editorial, disposición pública y seguimiento en el modelo. Un reporte debe poder referenciar una revisión pública aprobada distinta de su edición pendiente.
 - Distinguir fechas de observación, envío y publicación. Guardar fechas en UTC y mostrarlas en `America/La_Paz`.

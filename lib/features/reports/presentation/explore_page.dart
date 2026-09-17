@@ -21,6 +21,13 @@ class _ExplorePageState extends State<ExplorePage> {
   void initState() {
     super.initState();
     _load();
+    if (widget.repository is Listenable) {
+      (widget.repository as Listenable).addListener(_refresh);
+    }
+  }
+
+  void _refresh() {
+    if (mounted) setState(_load);
   }
 
   void _load() {
@@ -29,6 +36,9 @@ class _ExplorePageState extends State<ExplorePage> {
 
   @override
   void dispose() {
+    if (widget.repository is Listenable) {
+      (widget.repository as Listenable).removeListener(_refresh);
+    }
     _search.dispose();
     super.dispose();
   }

@@ -4,6 +4,9 @@ import '../../reports/domain/report_repository.dart';
 import '../../reports/domain/report.dart';
 import '../../reports/presentation/report_widgets.dart';
 import '../domain/submission.dart';
+import '../domain/session_repository.dart';
+import '../domain/review_record.dart';
+import 'moderation_page.dart';
 import '../prototype_services.dart';
 import 'access_page.dart';
 import 'flow_widgets.dart';
@@ -42,6 +45,10 @@ class ProfilePage extends StatelessWidget {
   });
   final PrototypeServices services;
   final ReportRepository publicReports;
+  Widget _moderationAccess() => OutlinedButton(
+    onPressed: services.session.enterModerationScenario,
+    child: const Text('Escenario de moderación · demo'),
+  );
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Listenable.merge([services.session, services.submissions]),
@@ -57,6 +64,33 @@ class ProfilePage extends StatelessWidget {
             FilledButton(
               onPressed: () => requestDemoAccess(context, services.session),
               child: const Text('Acceso simulado'),
+            ),
+            _moderationAccess(),
+          ],
+        );
+      }
+      if (user.role == DemoRole.moderator) {
+        return FlowBody(
+          children: [
+            const DemoNotice(),
+            const Text(
+              'Escenario de moderación · demo. Identidad independiente; no es autenticación ni autorización real.',
+            ),
+            FilledButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => ModerationPage(
+                    repository: services.submissions,
+                    session: services.session,
+                  ),
+                ),
+              ),
+              child: const Text('Abrir moderación'),
+            ),
+            OutlinedButton(
+              onPressed: services.session.signOut,
+              child: const Text('Cerrar sesión simulada'),
             ),
           ],
         );
@@ -78,6 +112,7 @@ class ProfilePage extends StatelessWidget {
             onPressed: services.session.signOut,
             child: const Text('Cerrar sesión simulada'),
           ),
+          _moderationAccess(),
           Text(
             'Borradores (${drafts.length})',
             style: Theme.of(context).textTheme.titleLarge,
@@ -118,7 +153,7 @@ class ProfilePage extends StatelessWidget {
               child: ListTile(
                 title: Text(item.draft.title),
                 subtitle: Text(
-                  'Pendiente de aprobación\n${boliviaDate(item.sentAt)}\nDatos de demostración',
+                  '${reviewLabel(item.status)}\n${boliviaDate(item.sentAt)}\nDatos de demostración',
                 ),
                 onTap: () => Navigator.push(
                   context,
@@ -127,6 +162,12 @@ class ProfilePage extends StatelessWidget {
                       id: item.id,
                       repository: services.submissions,
                       session: services.session,
+                      onRevise: (draft) => openReportForm(
+                        context,
+                        services,
+                        publicReports,
+                        draft: draft,
+                      ),
                     ),
                   ),
                 ),

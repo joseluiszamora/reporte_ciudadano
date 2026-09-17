@@ -23,6 +23,21 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
   void initState() {
     super.initState();
     _load();
+    if (widget.repository is Listenable) {
+      (widget.repository as Listenable).addListener(_refresh);
+    }
+  }
+
+  void _refresh() {
+    if (mounted) setState(_load);
+  }
+
+  @override
+  void dispose() {
+    if (widget.repository is Listenable) {
+      (widget.repository as Listenable).removeListener(_refresh);
+    }
+    super.dispose();
   }
 
   void _load() {
@@ -59,9 +74,34 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
         }
         final report = snapshot.data;
         if (report == null) {
-          return const ContentMessage(
-            title: 'Reporte no disponible',
-            message: 'No existe una versión pública visible de este reporte.',
+          final notice = widget.repository is ReportNoticeRepository
+              ? (widget.repository as ReportNoticeRepository).publicNotice(
+                  widget.reportId,
+                )
+              : null;
+          return SingleChildScrollView(
+            child: ContentMessage(
+              title: notice?.disposition == PublicDisposition.hidden
+                  ? 'Reporte oculto'
+                  : notice?.disposition == PublicDisposition.duplicate
+                  ? 'Reporte duplicado'
+                  : 'Reporte no disponible',
+              message: 'No existe una versión pública visible de este reporte.',
+              action: notice?.duplicateOf == null
+                  ? null
+                  : FilledButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => ReportDetailPage(
+                            repository: widget.repository,
+                            reportId: notice!.duplicateOf!,
+                          ),
+                        ),
+                      ),
+                      child: const Text('Ver reporte principal'),
+                    ),
+            ),
           );
         }
         return SingleChildScrollView(
@@ -106,7 +146,13 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                       '${report.zone} · El Alto\n${report.reference}\n'
                           'Referencia ficticia. Sin mapa ni validación territorial en esta entrega.',
                     ),
-                    _section(context, 'Evidencia', 'Sin foto adjunta'),
+                    _section(
+                      context,
+                      'Evidencia',
+                      report.publicRevision!.demoAttachments.isEmpty
+                          ? 'Sin foto adjunta'
+                          : 'Adjuntos simulados aprobados\n${report.publicRevision!.demoAttachments.join('\n')}',
+                    ),
                     _section(
                       context,
                       'Observación y autoría',

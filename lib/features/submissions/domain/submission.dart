@@ -1,4 +1,6 @@
 import '../../../core/geo_point.dart';
+import '../../reports/domain/report.dart';
+import 'review_record.dart';
 
 const reportCategories = [
   'Baches y calzada',
@@ -69,6 +71,8 @@ class ReportDraft {
     required this.id,
     required this.ownerId,
     required this.observedAt,
+    this.reportId,
+    this.baseRevisionId,
     this.category = '',
     this.title = '',
     this.description = '',
@@ -90,6 +94,7 @@ class ReportDraft {
       zone,
       reference;
   final DateTime observedAt;
+  final String? reportId, baseRevisionId;
   final bool cityConfirmed;
   final int step;
   final List<String> photos;
@@ -100,6 +105,9 @@ class ReportDraft {
   }
 
   ReportDraft copyWith({
+    String? id,
+    String? reportId,
+    String? baseRevisionId,
     String? category,
     String? title,
     String? description,
@@ -112,7 +120,9 @@ class ReportDraft {
     int? step,
     List<String>? photos,
   }) => ReportDraft(
-    id: id,
+    id: id ?? this.id,
+    reportId: reportId ?? this.reportId,
+    baseRevisionId: baseRevisionId ?? this.baseRevisionId,
     ownerId: ownerId,
     category: category ?? this.category,
     title: title ?? this.title,
@@ -128,6 +138,8 @@ class ReportDraft {
   );
   Map<String, Object?> toJson() => {
     'id': id,
+    'reportId': reportId,
+    'baseRevisionId': baseRevisionId,
     'ownerId': ownerId,
     'category': category,
     'title': title,
@@ -143,6 +155,8 @@ class ReportDraft {
   };
   factory ReportDraft.fromJson(Map<String, dynamic> json) => ReportDraft(
     id: json['id'] as String,
+    reportId: json['reportId'] as String?,
+    baseRevisionId: json['baseRevisionId'] as String?,
     ownerId: json['ownerId'] as String,
     category: json['category'] as String,
     title: json['title'] as String,
@@ -158,27 +172,47 @@ class ReportDraft {
   );
 }
 
-class PendingSubmission {
-  const PendingSubmission({
+class ReportSubmission {
+  const ReportSubmission({
     required this.draft,
     required this.alias,
     required this.sentAt,
+    this.status = ReviewStatus.pending,
+    this.decision,
   });
   final ReportDraft draft;
   final String alias;
   final DateTime sentAt;
+  final ReviewStatus status;
+  final ModerationEvent? decision;
   String get id => draft.id;
+  String get reportId => draft.reportId ?? id;
+  ReportSubmission reviewed(ReviewStatus status, ModerationEvent decision) =>
+      ReportSubmission(
+        draft: draft,
+        alias: alias,
+        sentAt: sentAt,
+        status: status,
+        decision: decision,
+      );
   Map<String, Object?> toJson() => {
     'draft': draft.toJson(),
     'alias': alias,
     'sentAt': sentAt.toUtc().toIso8601String(),
+    'status': status.name,
+    'decision': decision?.toJson(),
   };
-  factory PendingSubmission.fromJson(Map<String, dynamic> json) =>
-      PendingSubmission(
-        draft: ReportDraft.fromJson(json['draft'] as Map<String, dynamic>),
-        alias: json['alias'] as String,
-        sentAt: DateTime.parse(json['sentAt'] as String).toUtc(),
-      );
+  factory ReportSubmission.fromJson(
+    Map<String, dynamic> json,
+  ) => ReportSubmission(
+    draft: ReportDraft.fromJson(json['draft'] as Map<String, dynamic>),
+    alias: json['alias'] as String,
+    sentAt: DateTime.parse(json['sentAt'] as String).toUtc(),
+    status: ReviewStatus.values.byName(json['status'] as String? ?? 'pending'),
+    decision: json['decision'] == null
+        ? null
+        : ModerationEvent.fromJson(json['decision'] as Map<String, dynamic>),
+  );
 }
 
 String moderationMessage(DateTime now) {

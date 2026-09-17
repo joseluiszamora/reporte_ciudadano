@@ -14,6 +14,7 @@ Future<List<Report>> findPublicMatches(
       .where(
         (report) =>
             report.isPublic &&
+            report.id != draft.reportId &&
             report.category == draft.category &&
             report.tracking != TrackingStatus.verified &&
             report.point != null &&

@@ -8,7 +8,7 @@ Future<bool> requestDemoAccess(
   BuildContext context,
   SessionRepository session,
 ) async {
-  if (session.current != null) return true;
+  if (session.current?.role == DemoRole.citizen) return true;
   return await Navigator.of(context).push<bool>(
         MaterialPageRoute(builder: (_) => AccessPage(session: session)),
       ) ??

@@ -52,7 +52,7 @@ class _ReportFormPageState extends State<ReportFormPage> {
   String? _error, _saveError;
   int _saveVersion = 0;
   SendScenario _scenario = SendScenario.normal;
-  PendingSubmission? _receipt;
+  ReportSubmission? _receipt;
   bool get _committed => widget.repository.ownSubmission(_draft.id) != null;
   ReportRules get _rules => widget.repository.rules;
 
@@ -66,10 +66,25 @@ class _ReportFormPageState extends State<ReportFormPage> {
     _longitude = TextEditingController(text: _draft.longitude);
     _zone = TextEditingController(text: _draft.zone);
     _reference = TextEditingController(text: _draft.reference);
+    if (widget.publicReports is Listenable) {
+      (widget.publicReports as Listenable).addListener(_invalidateMatches);
+    }
+  }
+
+  void _invalidateMatches() {
+    if (mounted) {
+      setState(() {
+        _matches = [];
+        _matchesChecked = false;
+      });
+    }
   }
 
   @override
   void dispose() {
+    if (widget.publicReports is Listenable) {
+      (widget.publicReports as Listenable).removeListener(_invalidateMatches);
+    }
     for (final controller in [
       _title,
       _description,

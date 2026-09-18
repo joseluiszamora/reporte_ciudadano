@@ -2,10 +2,22 @@ import '../../../core/geo_point.dart';
 import '../domain/report.dart';
 import '../domain/report_repository.dart';
 
-class DemoReportRepository implements ReportRepository {
+class DemoReportRepository implements ReportRepository, ReportNoticeRepository {
   DemoReportRepository({List<Report>? reports})
     : _reports = List.unmodifiable(reports ?? demoReports());
   final List<Report> _reports;
+
+  @override
+  PublicReportNotice? publicNotice(String reportId) {
+    for (final report in _reports) {
+      if (report.id == reportId &&
+          report.publicRevision?.status == ReviewStatus.approved &&
+          report.disposition != PublicDisposition.visible) {
+        return PublicReportNotice(report.disposition);
+      }
+    }
+    return null;
+  }
 
   @override
   Future<List<Report>> listPublicReports() async {

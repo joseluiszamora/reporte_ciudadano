@@ -26,11 +26,20 @@ class _ContributionPageState extends State<ContributionPage> {
   Future<void> _photo() async {
     setState(() => _busy = true);
     try {
-      final photo = await CommunityScope.of(context).services.photos.select(false);
+      final photo = await CommunityScope.of(context).services.photos
+          .select(false);
       if (mounted) _change(_draft.copyWith(photos: [..._draft.photos, photo]));
-    } catch (_) { if (mounted) setState(() => _error = 'No se pudo agregar el adjunto simulado. Reintenta.'); }
-    finally { if (mounted) setState(() => _busy = false); }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = 'No se pudo agregar el adjunto simulado. Reintenta.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
+
   @override
   void dispose() {
     _body.dispose();
@@ -173,7 +182,11 @@ class _ContributionPageState extends State<ContributionPage> {
                 for (final kind in ContributionKind.values)
                   DropdownMenuItem(value: kind, child: Text(kind.label)),
               ],
-              onChanged: _busy
+              onChanged:
+                  _busy ||
+                      (_draft.previousId != null &&
+                          (_draft.kind == ContributionKind.solution ||
+                              _draft.kind == ContributionKind.contradiction))
                   ? null
                   : (kind) => _change(_draft.copyWith(kind: kind)),
             ),
@@ -214,7 +227,7 @@ class _ContributionPageState extends State<ContributionPage> {
                 child: const Text('Agregar adjunto simulado'),
               ),
             const Text(
-              'No se accede a la cámara ni a fotos reales. No se propone ni verifica una solución en este formulario.',
+              'Los adjuntos son simulados. Una propuesta aprobada pasa a Solución reportada; verificarla exige otra decisión. La evidencia contradictoria aprobada abre una revisión y no reabre automáticamente el problema.',
             ),
             DropdownButtonFormField<SendScenario>(
               initialValue: _scenario,

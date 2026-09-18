@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'dart:math';
 
+import '../../follow_up/domain/follow_up.dart';
+import '../../follow_up/domain/follow_up_repository.dart';
+import '../../follow_up/data/workflow_state.dart';
+
 import '../../community/domain/community.dart';
 import '../../community/domain/community_repository.dart';
 import '../../community/data/community_state.dart';
@@ -15,7 +19,7 @@ import '../domain/submission.dart';
 import '../domain/submission_repository.dart';
 
 class LocalSubmissionRepository extends SubmissionRepository
-    implements CommunityRepository {
+    implements CommunityRepository, FollowUpRepository {
   LocalSubmissionRepository({
     required this.session,
     required this.storage,
@@ -29,6 +33,9 @@ class LocalSubmissionRepository extends SubmissionRepository
   @override
   final CommunityRules communityRules;
   CommunityState _community = CommunityState();
+  WorkflowState _workflow = WorkflowState();
+  @override
+  int get maxManagementPhotos => rules.maxPhotos;
   final SessionRepository session;
   final DraftStorage storage;
   @override
@@ -39,14 +46,15 @@ class LocalSubmissionRepository extends SubmissionRepository
   Map<String, PublicationRecord> _records = {};
   int _publicVersion = 0;
   @override
-  int get publicVersion => _publicVersion + _community.publicVersion;
+  int get publicVersion =>
+      _publicVersion + _community.publicVersion + _workflow.publicVersion;
   Future<void> _tail = Future.value();
 
   Future<void> load() async {
     final value = await storage.read();
     if (value == null) return;
     final json = jsonDecode(value) as Map<String, dynamic>;
-    if (![1, 2, 3].contains(json['version'])) {
+    if (![1, 2, 3, 4].contains(json['version'])) {
       throw const FormatException('Formato local desconocido');
     }
     final drafts = (json['drafts'] as List).map(
@@ -71,9 +79,12 @@ class LocalSubmissionRepository extends SubmissionRepository
                 value as Map<String, dynamic>,
               ),
           };
-    _community = json['version'] == 3
+    _community = (json['version'] as int) >= 3
         ? CommunityState.fromJson(json['community'] as Map<String, dynamic>)
         : CommunityState();
+    _workflow = json['version'] == 4
+        ? WorkflowState.fromJson(json['workflow'] as Map<String, dynamic>)
+        : WorkflowState();
   }
 
   DemoIdentity _identity() =>
@@ -135,11 +146,13 @@ class LocalSubmissionRepository extends SubmissionRepository
     Map<String, ReportSubmission> submissions, [
     Map<String, PublicationRecord>? records,
     CommunityState? community,
+    WorkflowState? workflow,
   ]) async {
     final nextRecords = records ?? _records;
     await storage.write(
       jsonEncode({
-        'version': 3,
+        'version': 4,
+        'workflow': (workflow ?? _workflow).toJson(),
         'community': (community ?? _community).toJson(),
         'drafts': drafts.values.map((d) => d.toJson()).toList(),
         'submissions': submissions.values.map((s) => s.toJson()).toList(),
@@ -159,6 +172,7 @@ class LocalSubmissionRepository extends SubmissionRepository
     }
     _records = nextRecords;
     _community = community ?? _community;
+    _workflow = workflow ?? _workflow;
     notifyListeners();
   }
 
@@ -475,8 +489,11 @@ class LocalSubmissionRepository extends SubmissionRepository
     return report;
   }
 
-  Future<void> _commitCommunity(CommunityState state) =>
-      _commit({..._drafts}, {..._submissions}, {..._records}, state);
+  Future<void> _commitCommunity(
+    CommunityState state, {
+    WorkflowState? workflow,
+  }) =>
+      _commit({..._drafts}, {..._submissions}, {..._records}, state, workflow);
   String? _reportOwner(String reportId) =>
       _submissions[_records[reportId]?.latestRevisionId]?.draft.ownerId;
 
@@ -486,6 +503,7 @@ class LocalSubmissionRepository extends SubmissionRepository
     String eventId,
     DateTime at, {
     bool comment = false,
+    NoticeKind kind = NoticeKind.update,
   }) {
     var result = state;
     for (final follow in state.follows.values.where(
@@ -502,7 +520,7 @@ class LocalSubmissionRepository extends SubmissionRepository
           id: id,
           ownerId: follow.ownerId,
           reportId: reportId,
-          kind: comment ? NoticeKind.comment : NoticeKind.update,
+          kind: comment ? NoticeKind.comment : kind,
           at: at,
         ),
       );
@@ -556,7 +574,7 @@ class LocalSubmissionRepository extends SubmissionRepository
       updates: [
         ...report.updates,
         ...approved
-            .where((c) => c.draft.kind == ContributionKind.evidence)
+            .where((c) => c.draft.kind != ContributionKind.comment)
             .map(event),
       ],
       lastObservation: dates.isEmpty
@@ -578,7 +596,7 @@ class LocalSubmissionRepository extends SubmissionRepository
     if (observedAt.isAfter(_clock())) {
       throw ArgumentError('La observación no puede ser futura.');
     }
-    final before = decoratePublicReport(report);
+    final before = decoratePublicWorkflow(decoratePublicReport(report));
     final observation = Observation(owner, reportId, observedAt.toUtc());
     var next = _community.copyWith(
       observations: {..._community.observations, observation.key: observation},
@@ -651,7 +669,12 @@ class LocalSubmissionRepository extends SubmissionRepository
               !n.read &&
               (n.kind != NoticeKind.comment || preferences.comments),
         );
-        result.add(FollowedReport(decoratePublicReport(report), news));
+        result.add(
+          FollowedReport(
+            decoratePublicWorkflow(decoratePublicReport(report)),
+            news,
+          ),
+        );
       }
     }
     return session.current?.id == owner ? result : [];
@@ -825,6 +848,13 @@ class LocalSubmissionRepository extends SubmissionRepository
           !_latestContributions().any((c) => c.id == prior.id)) {
         throw StateError('La revisión del aporte cambió.');
       }
+      if (prior.draft.kind != draft.kind &&
+          (prior.draft.kind == ContributionKind.solution ||
+              prior.draft.kind == ContributionKind.contradiction)) {
+        throw ArgumentError(
+          'Conserva el tipo de aporte de seguimiento al corregirlo.',
+        );
+      }
     } else if (draft.groupId != null) {
       throw StateError('El aporte necesita una revisión de partida.');
     }
@@ -931,6 +961,442 @@ class LocalSubmissionRepository extends SubmissionRepository
         comment: item.draft.kind == ContributionKind.comment,
       );
     }
-    await _commitCommunity(next);
+    var workflow = _workflow;
+    if (status == ReviewStatus.approved &&
+        (item.draft.kind == ContributionKind.solution ||
+            item.draft.kind == ContributionKind.contradiction)) {
+      final base = _approved(item.draft.reportId) ?? report;
+      workflow = _acceptSolutionEvidence(item, base, event);
+    }
+    await _commitCommunity(next, workflow: workflow);
+  });
+
+  WorkflowState _acceptSolutionEvidence(
+    Contribution item,
+    Report? base,
+    ModerationEvent decision,
+  ) {
+    final reportId = item.draft.reportId;
+    final record = _workflow.resolutions[reportId] ?? ResolutionRecord();
+    final current = record.status ?? base?.tracking ?? TrackingStatus.reported;
+    final solution = item.draft.kind == ContributionKind.solution;
+    final review = !solution || current == TrackingStatus.verified;
+    final event = ModerationEvent(
+      action: review
+          ? 'Evidencia aprobada para revisión de seguimiento'
+          : 'Solución reportada · pendiente de verificar',
+      reason: 'Contenido aprobado. La decisión de seguimiento se realiza por separado.',
+      actor: decision.actor,
+      at: decision.at,
+      revisionId: item.id,
+    );
+    final updated = record.changed(
+      status: solution && current != TrackingStatus.verified
+          ? TrackingStatus.solutionReported
+          : current,
+      candidateId: solution && current != TrackingStatus.verified
+          ? item.id
+          : null,
+      reviewIds: review ? [...record.reviewIds, item.id] : record.reviewIds,
+      event: event,
+    );
+    return _workflow.copyWith(
+      resolutions: {..._workflow.resolutions, reportId: updated},
+      publicChanged: true,
+    );
+  }
+
+  @override
+  Report decoratePublicWorkflow(Report report) {
+    final record = _workflow.resolutions[report.id];
+    var tracking = record?.status ?? report.tracking;
+    if (tracking == TrackingStatus.reported &&
+        report.confirmations >= communityRules.confirmationThreshold) {
+      tracking = TrackingStatus.confirmed;
+    }
+    final approved = <String, ManagementEntry>{};
+    for (final entry in _workflow.entries.values.where(
+      (e) => e.draft.reportId == report.id && e.status == ReviewStatus.approved,
+    )) {
+      approved[entry.draft.group] = entry;
+    }
+    final management = [
+      ...report.management,
+      ...approved.values.map(
+        (e) => PublicEvent(
+          e.draft.publicSummary.occurredAt,
+          e.draft.publicSummary.publicText,
+        ),
+      ),
+    ]..sort((a, b) => a.date.compareTo(b.date));
+    return report.withCommunity(
+      confirmations: report.confirmations,
+      tracking: tracking,
+      comments: report.comments,
+      updates: report.updates,
+      lastObservation: report.lastCommunityObservedAt,
+      management: management,
+      history: [
+        ...report.history,
+        ...?record?.history.map(
+          (e) => PublicEvent(e.at, '${e.action}\n${e.reason}'),
+        ),
+      ],
+      solutionReviewRequired: record?.reviewIds.isNotEmpty ?? false,
+    );
+  }
+
+  Future<Report?> _baseForWorkflow(String reportId) async =>
+      _records.containsKey(reportId)
+      ? _approved(reportId)
+      : await catalog.getPublicReport(reportId);
+  @override
+  Future<Report?> reportForFollowUp(String reportId) async {
+    final actor = _moderator().id;
+    final base = await _baseForWorkflow(reportId);
+    if (_moderator().id != actor) throw StateError('La sesión cambió.');
+    return base == null
+        ? null
+        : decoratePublicWorkflow(
+            base.isPublic ? decoratePublicReport(base) : base,
+          );
+  }
+
+  @override
+  Future<List<Report>> reportsForFollowUp() async {
+    final actor = _moderator().id;
+    final catalogReports = await catalog.listPublicReports();
+    if (_moderator().id != actor) throw StateError('La sesión cambió.');
+    final local = _records.keys.map(_approved).whereType<Report>();
+    return [...catalogReports, ...local]
+        .map(
+          (r) =>
+              decoratePublicWorkflow(r.isPublic ? decoratePublicReport(r) : r),
+        )
+        .toList();
+  }
+
+  @override
+  ResolutionRecord resolutionForReview(String reportId) {
+    _moderator();
+    return _workflow.resolutions[reportId] ?? ResolutionRecord();
+  }
+
+  @override
+  List<Contribution> solutionEvidenceForReview(String reportId) {
+    _moderator();
+    return List.unmodifiable(
+      _community.contributions.values.where(
+        (c) =>
+            c.draft.reportId == reportId &&
+            c.status == ReviewStatus.approved &&
+            (c.draft.kind == ContributionKind.solution ||
+                c.draft.kind == ContributionKind.contradiction),
+      ),
+    );
+  }
+
+  Future<void> _resolutionDecision(
+    String reportId,
+    int expectedVersion,
+    String reason,
+    String action,
+  ) => _serial(() async {
+    final actor = _moderator();
+    final base = await _baseForWorkflow(reportId);
+    if (_moderator().id != actor.id || base == null) {
+      throw StateError('Reporte no disponible.');
+    }
+    final record = _workflow.resolutions[reportId] ?? ResolutionRecord();
+    if (record.version != expectedVersion) {
+      throw StateError(
+        'El seguimiento cambió. Revisa la información actual antes de decidir.',
+      );
+    }
+    if (reason.trim().isEmpty) {
+      throw ArgumentError('Escribe el motivo público revisado.');
+    }
+    final current = record.status ?? base.tracking;
+    var status = current;
+    String? candidateId;
+    if (action == 'Solución verificada') {
+      final candidate = _community.contributions[record.candidateId];
+      if (current != TrackingStatus.solutionReported ||
+          candidate?.status != ReviewStatus.approved ||
+          candidate?.draft.kind != ContributionKind.solution ||
+          record.reviewIds.isNotEmpty) {
+        throw StateError(
+          'Se necesita evidencia de solución aprobada y revisar las contradicciones pendientes.',
+        );
+      }
+      status = TrackingStatus.verified;
+    } else if (action == 'Reporte reabierto') {
+      if (current != TrackingStatus.verified &&
+          current != TrackingStatus.solutionReported) {
+        throw StateError('El reporte ya está abierto.');
+      }
+      status = TrackingStatus.reported;
+    } else {
+      if (record.reviewIds.isEmpty) {
+        throw StateError('No hay evidencia pendiente de revisar.');
+      }
+      final solutions = record.reviewIds
+          .map((id) => _community.contributions[id])
+          .whereType<Contribution>()
+          .where((c) => c.draft.kind == ContributionKind.solution)
+          .toList();
+      if (solutions.isNotEmpty && current == TrackingStatus.verified) {
+        candidateId = solutions.last.id;
+      }
+    }
+    final event = ModerationEvent(
+      action: action,
+      reason: reason.trim(),
+      actor: actor.alias,
+      at: _clock().toUtc(),
+      revisionId: candidateId ?? record.candidateId,
+    );
+    final updated = record.changed(
+      status: status,
+      candidateId: candidateId,
+      reviewIds: const [],
+      event: event,
+    );
+    final workflow = _workflow.copyWith(
+      resolutions: {..._workflow.resolutions, reportId: updated},
+      publicChanged: true,
+    );
+    final community = base.isPublic
+        ? _notifyFollowers(
+            _community,
+            reportId,
+            'resolution:$reportId:${updated.version}',
+            event.at,
+            kind: NoticeKind.resolution,
+          )
+        : _community;
+    await _commitCommunity(community, workflow: workflow);
+  });
+  @override
+  Future<void> verifySolution(
+    String reportId, {
+    required int expectedVersion,
+    required String reason,
+  }) => _resolutionDecision(
+    reportId,
+    expectedVersion,
+    reason,
+    'Solución verificada',
+  );
+  @override
+  Future<void> reopenReport(
+    String reportId, {
+    required int expectedVersion,
+    required String reason,
+  }) => _resolutionDecision(
+    reportId,
+    expectedVersion,
+    reason,
+    'Reporte reabierto',
+  );
+  @override
+  Future<void> keepResolution(
+    String reportId, {
+    required int expectedVersion,
+    required String reason,
+  }) => _resolutionDecision(
+    reportId,
+    expectedVersion,
+    reason,
+    'Evidencia revisada · estado conservado',
+  );
+
+  List<ManagementEntry> _latestManagement(String reportId) {
+    final groups = <String, ManagementEntry>{};
+    for (final e in _workflow.entries.values.where(
+      (e) => e.draft.reportId == reportId,
+    )) {
+      groups[e.draft.group] = e;
+    }
+    return groups.values.toList();
+  }
+
+  @override
+  List<ManagementDraft> managementDrafts(String reportId) {
+    _moderator();
+    return List.unmodifiable(
+      _workflow.drafts.values.where((d) => d.reportId == reportId),
+    );
+  }
+
+  @override
+  List<ManagementEntry> managementEntries(String reportId) {
+    _moderator();
+    return List.unmodifiable(
+      _workflow.entries.values.where((e) => e.draft.reportId == reportId),
+    );
+  }
+
+  @override
+  Future<ManagementDraft> createManagement(
+    String reportId, {
+    String? previousId,
+  }) => _serial(() async {
+    _moderator();
+    if (await _baseForWorkflow(reportId) == null) {
+      throw StateError('El reporte debe tener una versión aprobada.');
+    }
+    _moderator();
+    if (previousId == null) {
+      return ManagementDraft(
+        id: _newId(),
+        reportId: reportId,
+        publicSummary: ManagementSummary(occurredAt: _clock().toUtc()),
+      );
+    }
+    final previous = _workflow.entries[previousId];
+    if (previous == null ||
+        previous.draft.reportId != reportId ||
+        previous.status == ReviewStatus.pending ||
+        !_latestManagement(reportId).any((e) => e.id == previousId)) {
+      throw StateError('Consulta la última revisión de la gestión.');
+    }
+    for (final draft in managementDrafts(reportId)) {
+      if (draft.group == previous.draft.group) return draft;
+    }
+    final draft = previous.draft.copyWith(
+      id: _newId(),
+      previousId: previousId,
+      groupId: previous.draft.group,
+    );
+    await _commitCommunity(
+      _community,
+      workflow: _workflow.copyWith(
+        drafts: {..._workflow.drafts, draft.id: draft},
+      ),
+    );
+    return draft;
+  });
+  @override
+  Future<void> saveManagementDraft(ManagementDraft draft) => _serial(() async {
+    _moderator();
+    if (_workflow.entries.containsKey(draft.id)) return;
+    await _commitCommunity(
+      _community,
+      workflow: _workflow.copyWith(
+        drafts: {..._workflow.drafts, draft.id: draft},
+      ),
+    );
+  });
+  @override
+  Future<void> discardManagementDraft(String id) => _serial(() async {
+    _moderator();
+    await _commitCommunity(
+      _community,
+      workflow: _workflow.copyWith(drafts: {..._workflow.drafts}..remove(id)),
+    );
+  });
+  @override
+  Future<ManagementEntry> submitManagement(
+    ManagementDraft draft, {
+    SendScenario scenario = SendScenario.normal,
+  }) => _serial(() async {
+    final actor = _moderator();
+    final previous = _workflow.entries[draft.id];
+    if (previous != null) return previous;
+    if (await _baseForWorkflow(draft.reportId) == null ||
+        _moderator().id != actor.id) {
+      throw StateError('Reporte no disponible.');
+    }
+    final summary = draft.publicSummary;
+    if (summary.occurredAt.isAfter(_clock()) ||
+        summary.recipient.trim().isEmpty ||
+        summary.action.trim().isEmpty ||
+        summary.summary.trim().isEmpty ||
+        summary.evidence.length > rules.maxPhotos) {
+      throw ArgumentError(
+        'Completa fecha no futura, destinatario, acción y resumen público; revisa los adjuntos.',
+      );
+    }
+    if (draft.previousId != null) {
+      final prior = _workflow.entries[draft.previousId];
+      if (prior == null ||
+          prior.draft.reportId != draft.reportId ||
+          prior.draft.group != draft.group ||
+          prior.status == ReviewStatus.pending ||
+          !_latestManagement(draft.reportId).any((e) => e.id == prior.id)) {
+        throw StateError('La gestión cambió. Recupera su revisión vigente.');
+      }
+    } else if (draft.groupId != null) {
+      throw StateError('Falta la revisión anterior.');
+    }
+    await _commitCommunity(
+      _community,
+      workflow: _workflow.copyWith(
+        drafts: {..._workflow.drafts, draft.id: draft},
+      ),
+    );
+    if (scenario == SendScenario.offline ||
+        scenario == SendScenario.failBeforeSend) {
+      throw StateError('No pudimos enviar. La gestión quedó guardada.');
+    }
+    final entry = ManagementEntry(
+      draft: draft,
+      sentAt: _clock().toUtc(),
+      author: actor.alias,
+    );
+    await _commitCommunity(
+      _community,
+      workflow: _workflow.copyWith(
+        drafts: {..._workflow.drafts}..remove(draft.id),
+        entries: {..._workflow.entries, entry.id: entry},
+      ),
+    );
+    if (scenario == SendScenario.lostResponse) {
+      throw StateError(
+        'Respuesta perdida. Reintenta para recuperar la misma gestión.',
+      );
+    }
+    return entry;
+  });
+  @override
+  Future<void> reviewManagement(
+    String id,
+    ReviewStatus status,
+    String reason,
+  ) => _serial(() async {
+    final actor = _moderator();
+    final entry = _workflow.entries[id];
+    if (entry == null || entry.status != ReviewStatus.pending) {
+      throw StateError('La gestión ya fue revisada o no existe.');
+    }
+    if (status == ReviewStatus.pending || reason.trim().isEmpty) {
+      throw ArgumentError('La decisión requiere motivo.');
+    }
+    final base = await _baseForWorkflow(entry.draft.reportId);
+    if (_moderator().id != actor.id || base == null) {
+      throw StateError('Reporte no disponible.');
+    }
+    final event = ModerationEvent(
+      action: reviewLabel(status),
+      reason: reason.trim(),
+      actor: actor.alias,
+      at: _clock().toUtc(),
+      revisionId: id,
+    );
+    final workflow = _workflow.copyWith(
+      entries: {..._workflow.entries, id: entry.reviewed(status, event)},
+      publicChanged: status == ReviewStatus.approved,
+    );
+    final community = status == ReviewStatus.approved && base.isPublic
+        ? _notifyFollowers(
+            _community,
+            entry.draft.reportId,
+            'management:$id',
+            event.at,
+            kind: NoticeKind.management,
+          )
+        : _community;
+    await _commitCommunity(community, workflow: workflow);
   });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
+import 'features/sharing/presentation/open_demo_link_page.dart';
 import 'features/reports/data/moderated_report_repository.dart';
 import 'features/reports/domain/report_repository.dart';
 import 'features/reports/presentation/explore_page.dart';
@@ -29,6 +30,7 @@ class _ReporteCiudadanoAppState extends State<ReporteCiudadanoApp> {
     widget.repository,
     _services.submissions,
     community: _services.community,
+    followUp: _services.followUp,
   );
   @override
   void dispose() {
@@ -75,6 +77,16 @@ class _HomeState extends State<_Home> {
       toolbarHeight: 56 * MediaQuery.textScalerOf(context).scale(1),
       title: const Text('Reporte Ciudadano', maxLines: 2),
       actions: [
+        IconButton(
+          tooltip: 'Abrir enlace de demostración',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => OpenDemoLinkPage(repository: widget.repository),
+            ),
+          ),
+          icon: const Icon(Icons.link),
+        ),
         IconButton(
           tooltip: 'Notificaciones simuladas',
           onPressed: () => Navigator.push(

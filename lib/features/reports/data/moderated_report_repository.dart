@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../community/domain/community_repository.dart';
+import '../../follow_up/domain/follow_up_repository.dart';
 
 import '../../submissions/domain/submission_repository.dart';
 import '../domain/report.dart';
@@ -13,13 +14,24 @@ class ModeratedReportRepository extends ChangeNotifier
     this.catalog,
     this.submissions, {
     CommunityRepository? community,
-  }) : community =
+    FollowUpRepository? followUp,
+  }) : followUp =
+           followUp ??
+           (submissions is FollowUpRepository
+               ? submissions as FollowUpRepository
+               : null),
+       community =
            community ??
            (submissions is CommunityRepository
                ? submissions as CommunityRepository
                : null) {
     _publicVersion = submissions.publicVersion;
     submissions.addListener(_changed);
+    if (this.followUp != null &&
+        !identical(this.followUp, submissions) &&
+        !identical(this.followUp, this.community)) {
+      this.followUp!.addListener(notifyListeners);
+    }
     if (this.community != null && !identical(this.community, submissions)) {
       this.community!.addListener(notifyListeners);
     }
@@ -30,6 +42,7 @@ class ModeratedReportRepository extends ChangeNotifier
   final ReportRepository catalog;
   final SubmissionRepository submissions;
   final CommunityRepository? community;
+  final FollowUpRepository? followUp;
   late int _publicVersion;
   void _changed() {
     if (_publicVersion == submissions.publicVersion) return;
@@ -55,15 +68,25 @@ class ModeratedReportRepository extends ChangeNotifier
     return base == null ? null : _decorate(base);
   }
 
-  Report _decorate(Report report) =>
-      community?.decoratePublicReport(report) ?? report;
+  Report _decorate(Report report) {
+    final result = community?.decoratePublicReport(report) ?? report;
+    return followUp?.decoratePublicWorkflow(result) ?? result;
+  }
 
   @override
   PublicReportNotice? publicNotice(String reportId) =>
-      submissions.publicNotice(reportId);
+      submissions.publicNotice(reportId) ??
+      (catalog is ReportNoticeRepository
+          ? (catalog as ReportNoticeRepository).publicNotice(reportId)
+          : null);
   @override
   void dispose() {
     submissions.removeListener(_changed);
+    if (followUp != null &&
+        !identical(followUp, submissions) &&
+        !identical(followUp, community)) {
+      followUp!.removeListener(notifyListeners);
+    }
     if (community != null && !identical(community, submissions)) {
       community!.removeListener(notifyListeners);
     }

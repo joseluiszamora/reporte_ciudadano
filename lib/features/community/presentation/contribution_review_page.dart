@@ -186,7 +186,7 @@ class _ContributionReviewPageState extends State<ContributionReviewPage> {
                     'Versión enviada · ${reviewLabel(item.status)}',
                   ),
                   const Text(
-                    'El contenido aprobado solo aparece si el reporte es público. Se conservan los aportes contradictorios aprobados; verificar o reabrir una solución requiere otro flujo.',
+                    'El contenido aprobado solo aparece si el reporte es público. Se conservan los aportes contradictorios aprobados; verificar o reabrir una solución requiere una decisión en Gestiones y solución.',
                   ),
                   if (item.decision != null)
                     Text(

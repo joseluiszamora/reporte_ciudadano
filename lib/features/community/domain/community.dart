@@ -3,7 +3,9 @@ import '../../submissions/domain/review_record.dart';
 
 enum ContributionKind {
   comment('Comentario'),
-  evidence('Evidencia');
+  evidence('Evidencia'),
+  solution('Proponer solución'),
+  contradiction('Evidencia contradictoria');
 
   const ContributionKind(this.label);
   final String label;
@@ -153,7 +155,14 @@ class FollowRecord {
   );
 }
 
-enum NoticeKind { update, comment, reportReview, contributionReview }
+enum NoticeKind {
+  update,
+  comment,
+  reportReview,
+  contributionReview,
+  management,
+  resolution,
+}
 
 class CommunityNotice {
   const CommunityNotice({
@@ -173,6 +182,8 @@ class CommunityNotice {
   bool get isPrivate =>
       kind == NoticeKind.reportReview || kind == NoticeKind.contributionReview;
   String get label => switch (kind) {
+    NoticeKind.management => 'Gestión aprobada para publicación',
+    NoticeKind.resolution => 'Cambio de seguimiento revisado',
     NoticeKind.update => 'Novedad pública aprobada',
     NoticeKind.comment => 'Comentarios aprobados · aviso agrupado',
     NoticeKind.reportReview => 'Hay una decisión sobre tu reporte',

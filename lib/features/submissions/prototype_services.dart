@@ -3,6 +3,7 @@ import 'domain/device_adapters.dart';
 import 'domain/session_repository.dart';
 import 'domain/submission_repository.dart';
 import '../community/domain/community_repository.dart';
+import '../follow_up/domain/follow_up_repository.dart';
 
 class PrototypeServices {
   PrototypeServices({
@@ -11,7 +12,9 @@ class PrototypeServices {
     required this.location,
     required this.photos,
     CommunityRepository? community,
-  }) : community = community ?? submissions as CommunityRepository;
+    FollowUpRepository? followUp,
+  }) : community = community ?? submissions as CommunityRepository,
+       followUp = followUp ?? submissions as FollowUpRepository;
   factory PrototypeServices.memory() {
     final session = DemoSessionRepository();
     return PrototypeServices(
@@ -29,7 +32,11 @@ class PrototypeServices {
   final LocationAdapter location;
   final PhotoAdapter photos;
   final CommunityRepository community;
+  final FollowUpRepository followUp;
   void dispose() {
+    if (!identical(followUp, submissions) && !identical(followUp, community)) {
+      followUp.dispose();
+    }
     if (!identical(community, submissions)) community.dispose();
     submissions.dispose();
     session.dispose();

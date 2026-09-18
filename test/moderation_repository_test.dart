@@ -427,7 +427,7 @@ void main() {
         ReviewStatus.approved,
         'Revisión tras migrar',
       );
-      expect((jsonDecode(storage.value!) as Map)['version'], 3);
+      expect((jsonDecode(storage.value!) as Map)['version'], 4);
       expect(await public.getPublicReport(draft.id), isNotNull);
     },
   );

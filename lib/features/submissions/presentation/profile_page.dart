@@ -93,6 +93,8 @@ class ProfilePage extends StatelessWidget {
                     repository: services.submissions,
                     session: services.session,
                     community: services.community,
+                    followUp: services.followUp,
+                    photos: services.photos,
                   ),
                 ),
               ),

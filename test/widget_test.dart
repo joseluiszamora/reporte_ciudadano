@@ -145,7 +145,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Reporte no disponible'), findsOneWidget);
-    expect(find.text('Reporte oculto'), findsNothing);
+    expect(find.text('Reporte oculto'), findsOneWidget);
+    expect(find.textContaining('Ejemplo ficticio:'), findsNothing);
+    expect(find.textContaining('Zona de demostración 7'), findsNothing);
+    expect(find.textContaining('Autor:'), findsNothing);
+    expect(find.text('Lectura pública y enlace · demo'), findsNothing);
   });
 }

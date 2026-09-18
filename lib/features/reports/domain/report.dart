@@ -56,6 +56,7 @@ class Report {
     this.history = const [],
     this.point,
     this.lastCommunityObservedAt,
+    this.solutionReviewRequired = false,
   });
 
   final String id;
@@ -77,6 +78,7 @@ class Report {
   final List<PublicEvent> history;
   final GeoPoint? point;
   final DateTime? lastCommunityObservedAt;
+  final bool solutionReviewRequired;
 
   Report withCommunity({
     required int confirmations,
@@ -84,6 +86,9 @@ class Report {
     required List<PublicEvent> comments,
     required List<PublicEvent> updates,
     DateTime? lastObservation,
+    List<PublicEvent>? management,
+    List<PublicEvent>? history,
+    bool? solutionReviewRequired,
   }) => Report(
     id: id,
     category: category,
@@ -97,12 +102,14 @@ class Report {
     publicRevision: publicRevision,
     disposition: disposition,
     confirmations: confirmations,
-    management: management,
+    management: management ?? this.management,
     comments: comments,
     updates: updates,
-    history: history,
+    history: history ?? this.history,
     point: point,
     lastCommunityObservedAt: lastObservation,
+    solutionReviewRequired:
+        solutionReviewRequired ?? this.solutionReviewRequired,
   );
 
   bool get isPublic =>
@@ -129,6 +136,7 @@ class Report {
     history: history,
     point: point,
     lastCommunityObservedAt: lastCommunityObservedAt,
+    solutionReviewRequired: solutionReviewRequired,
   );
 }
 

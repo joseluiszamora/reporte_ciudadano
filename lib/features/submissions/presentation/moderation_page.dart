@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../follow_up/domain/follow_up_repository.dart';
+import '../../follow_up/presentation/follow_up_page.dart';
+import '../domain/device_adapters.dart';
+
 import '../../community/domain/community_repository.dart';
 import '../../community/presentation/contribution_review_page.dart';
 
@@ -16,11 +20,15 @@ class ModerationPage extends StatefulWidget {
     required this.repository,
     required this.session,
     this.community,
+    this.followUp,
+    this.photos,
     super.key,
   });
   final SubmissionRepository repository;
   final SessionRepository session;
   final CommunityRepository? community;
+  final FollowUpRepository? followUp;
+  final PhotoAdapter? photos;
   @override
   State<ModerationPage> createState() => _ModerationPageState();
 }
@@ -74,6 +82,23 @@ class _ModerationPageState extends State<ModerationPage> {
           maxWidth: 1120,
           children: [
             const DemoNotice(),
+            if (widget.followUp != null ||
+                widget.repository is FollowUpRepository)
+              FilledButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => FollowUpDashboard(
+                      repository:
+                          widget.followUp ??
+                          widget.repository as FollowUpRepository,
+                      session: widget.session,
+                      photos: widget.photos ?? DemoPhotoAdapter(),
+                    ),
+                  ),
+                ),
+                child: const Text('Gestiones y solución'),
+              ),
             const Text(
               'Rol simulado. Este selector no acredita permisos de producción. Solo se revisan los envíos creados en este dispositivo; el catálogo inicial es de lectura.',
             ),

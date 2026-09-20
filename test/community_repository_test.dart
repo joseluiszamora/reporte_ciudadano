@@ -358,7 +358,7 @@ void main() {
     expect(reopened.publishedReports.single.id, id);
     expect(await reopened.inbox(), isEmpty);
     await reopened.follow(id, true);
-    expect((jsonDecode(storage.value!) as Map)['version'], 4);
+    expect((jsonDecode(storage.value!) as Map)['version'], 5);
     reopened.dispose();
   });
 

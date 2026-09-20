@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../safety/domain/safety_repository.dart';
+import '../../safety/presentation/safety_pages.dart';
+
 import '../../follow_up/domain/follow_up_repository.dart';
 import '../../follow_up/presentation/follow_up_page.dart';
 import '../domain/device_adapters.dart';
@@ -22,6 +25,7 @@ class ModerationPage extends StatefulWidget {
     this.community,
     this.followUp,
     this.photos,
+    this.safety,
     super.key,
   });
   final SubmissionRepository repository;
@@ -29,6 +33,7 @@ class ModerationPage extends StatefulWidget {
   final CommunityRepository? community;
   final FollowUpRepository? followUp;
   final PhotoAdapter? photos;
+  final SafetyRepository? safety;
   @override
   State<ModerationPage> createState() => _ModerationPageState();
 }
@@ -82,6 +87,22 @@ class _ModerationPageState extends State<ModerationPage> {
           maxWidth: 1120,
           children: [
             const DemoNotice(),
+            if (widget.safety != null || widget.repository is SafetyRepository)
+              OutlinedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => ComplaintsPage(
+                      repository:
+                          widget.safety ??
+                          widget.repository as SafetyRepository,
+                      session: widget.session,
+                      moderation: true,
+                    ),
+                  ),
+                ),
+                child: const Text('Revisar denuncias de contenido'),
+              ),
             if (widget.followUp != null ||
                 widget.repository is FollowUpRepository)
               FilledButton(

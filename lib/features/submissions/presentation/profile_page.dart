@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../safety/presentation/safety_pages.dart';
+
 import '../../community/presentation/contribution_page.dart';
 
 import '../../reports/domain/report_repository.dart';
@@ -95,6 +97,7 @@ class ProfilePage extends StatelessWidget {
                     community: services.community,
                     followUp: services.followUp,
                     photos: services.photos,
+                    safety: services.safety,
                   ),
                 ),
               ),
@@ -145,6 +148,18 @@ class ProfilePage extends StatelessWidget {
             ),
             child: const Text('Mis aportes'),
           ),
+          OutlinedButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => ComplaintsPage(
+                  repository: services.safety,
+                  session: services.session,
+                ),
+              ),
+            ),
+            child: const Text('Mis denuncias de contenido'),
+          ),
           Text(
             'Borradores (${drafts.length})',
             style: Theme.of(context).textTheme.titleLarge,
@@ -192,6 +207,7 @@ class ProfilePage extends StatelessWidget {
                   MaterialPageRoute<void>(
                     builder: (_) => SubmissionStatusPage(
                       id: item.id,
+                      safety: services.safety,
                       repository: services.submissions,
                       session: services.session,
                       onRevise: (draft) => openReportForm(

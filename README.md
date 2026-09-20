@@ -1,8 +1,26 @@
 # Reporte Ciudadano
 
-Prototipo Flutter **0.6.0** para consultar, enviar, revisar y seguir problemas persistentes de El Alto. Interfaz en español, orientada a Android. Usa únicamente datos ficticios, identificados como **Datos de demostración**.
+Prototipo Flutter **0.8.0** para consultar, enviar, revisar y seguir problemas persistentes de El Alto. Interfaz en español, orientada a Android. Usa únicamente datos ficticios, identificados como **Datos de demostración**.
 
-## Estado actual: sexta entrega — lectura pública compartida
+## Estado actual: octava entrega — mapa y filtros
+
+- Explorar alterna lista y mapa esquemático con marcadores agrupados y tarjetas públicas. Desplazamiento y zoom mediante botones accesibles; búsqueda explícita en el área.
+- Filtros combinables por categoría, seguimiento y fechas inclusivas de última observación en Bolivia. Conserva búsqueda, filtros y posiciones durante la navegación.
+- Ubicación simulada contextual, ensayo de rechazo y orden por cercanía. Sin proveedor cartográfico, calles, límites oficiales ni permisos GPS reales.
+
+Alcance y verificación: [Octava entrega](docs/08_entrega_mapa_filtros.md).
+
+### Capacidades conservadas de la séptima entrega
+
+- **Perfil → Mis envíos → reporte → Retirar autoría**: confirmación explícita para conservar el reporte como **Autor anónimo**. Los aportes de su autor en ese reporte también se anonimizan, incluso al aprobar revisiones posteriores. No cambia la visibilidad ni elimina la cuenta.
+- **Detalle → Denunciar contenido**: motivo y detalles privados, acceso simulado contextual, recepción y reintento idempotente. No envía reclamos a autoridades ni oculta automáticamente el contenido.
+- **Perfil → Mis denuncias de contenido**: recepción y estado propios. **Moderación → Revisar denuncias de contenido**: cola, revisión con motivo y cierre. En reportes locales aprobados se puede ocultar todo el reporte y cerrar la denuncia en una misma escritura.
+- El catálogo sigue siendo de lectura: admite recepción y cierre de revisión de denuncias, pero su ocultamiento se demuestra con reportes locales. No hay moderación granular independiente de un comentario/foto en esta entrega.
+- Persistencia **JSON v5**, compatible con v1–v4. Se conservan los datos previos y la identidad de reintento. Los vínculos internos de autoría siguen en el almacenamiento local; la política de retención del piloto está pendiente.
+
+Escenarios, alcance y comprobaciones: [Séptima entrega](docs/07_entrega_privacidad_contenido.md). La validación manual integral sigue pendiente; el prototipo aún no se considera completo.
+
+### Capacidades conservadas de la sexta entrega
 
 - Desde el detalle, **Lectura pública y enlace · demo** abre una representación adaptable y sin cuenta del reporte aprobado: evidencia, gestiones, actualizaciones, comentarios e historial públicos.
 - **Copiar enlace de demostración** vuelve a consultar disponibilidad y copia únicamente un identificador local. El botón de enlace de la cabecera permite pegarlo y abrirlo en el prototipo.
@@ -10,7 +28,7 @@ Prototipo Flutter **0.6.0** para consultar, enviar, revisar y seguir problemas p
 - Oculto, duplicado e inexistente tienen estados propios. Un duplicado solo enlaza a un principal visible. Una edición pendiente conserva la versión aprobada y sus medios; ocultar retira también el contenido de una lectura compartida abierta.
 - Esta vista no modifica seguimientos ni marca avisos como leídos. **Abrir en la aplicación** vuelve al detalle participativo, sin acciones automáticas.
 
-Recorridos y comprobaciones: [Sexta entrega](docs/06_entrega_lectura_publica.md). La persistencia sigue en JSON v4 y no se añaden dependencias ni plataformas.
+Recorridos y comprobaciones históricas: [Sexta entrega](docs/06_entrega_lectura_publica.md). La séptima conserva estos recorridos sin añadir dependencias ni plataformas.
 
 ### Capacidades conservadas de la quinta entrega
 
@@ -122,12 +140,14 @@ Más escenarios y cobertura: [Entrega de revisión y versiones](docs/03_entrega_
 | Envío a revisión | Transacción local simulada. No se comunica con moderadores ni autoridades reales. |
 | GPS | Adaptador simulado: punto fijo o permiso rechazado. No usa la ubicación del dispositivo. |
 | Cámara/galería | Fichas simuladas, sin fotografías ni acceso al dispositivo. No se procesa EXIF porque no se reciben imágenes reales. |
-| Territorio y coincidencias | Coordenadas de demostración y cálculo local de cercanía. Sin mapas, geocodificación ni límites oficiales. |
+| Territorio y coincidencias | Coordenadas de demostración y cálculo local de cercanía. Mapa esquemático local, sin cartografía real, geocodificación ni límites oficiales. |
 | Moderación y publicación | Operaciones locales simuladas: cola, comparación, decisiones, correcciones, disposición pública y auditoría persistida. Sin controles de servidor. |
 | Gestiones y solución | Registro, borradores, revisión y versiones locales; propuesta, verificación y reapertura con historial. Entidades, evidencias y documentos ficticios; no hay recepción oficial, envío de reclamos ni certificación municipal. |
 | Confirmar, seguir y aportar | Operaciones locales: confirmación única y aportes revisados antes de publicación. |
 | Notificaciones y preferencias | Bandeja local simulada. Avisos privados para autores y públicos para seguidores; sin push ni servicios externos. |
 | Lectura compartida | Vista local de demostración, apertura de identificadores y copia al portapapeles. Sin web publicada, indexación, enlaces Android externos ni distribución de contenido a otros dispositivos. |
+| Retiro de autoría | Anonimización de metadatos públicos del reporte propio y de sus aportes en él, conservando revisión, seguimiento y contenido. No borra datos ni depura automáticamente texto/fotos. |
+| Denuncia de contenido | Recepción y revisión privadas locales. Ocultamiento atómico del reporte local completo al resolver. Sin servicio real de moderación ni comunicación institucional. |
 | Seguridad del piloto | No implementada: la separación local de cuentas no sustituye autorización de servidor. |
 
 Los reportes públicos precargados son ficticios. Las gestiones y decisiones locales de seguimiento se aplican sobre ellos al cargar. Los borradores, envíos, publicaciones, decisiones, participaciones, gestiones, seguimientos y avisos creados por el usuario persisten únicamente en este dispositivo; borrar los datos de la app los elimina. El prototipo no recoge credenciales reales ni pide permisos GPS/cámara/push. No hay envío automático en segundo plano.
@@ -147,6 +167,7 @@ lib/
   features/community/          # Confirmaciones, aportes, seguimientos, bandeja y sus contratos
   features/follow_up/          # Gestiones públicas/internas, revisión y decisiones de solución
   features/sharing/            # Formato del enlace local y apertura de lectura pública
+  features/safety/             # Retiro de autoría, denuncias privadas y revisión
   features/submissions/
     domain/                    # Borradores, reglas, sesión, contratos de repositorios y adaptadores
     data/                      # Repositorio local serializado y almacenamiento en preferencias
@@ -157,12 +178,13 @@ lib/
 - `ReportRepository`: consultas exclusivamente públicas; nunca entregar revisiones privadas. `ModeratedReportRepository` combina el catálogo con publicaciones locales y notifica solo cambios públicos, sin recargar Explorar por cada autoguardado. `ReportNoticeRepository` entrega avisos generales de oculto/duplicado sin motivos privados.
 - `SessionRepository`: identidad actual y acceso. Implementación de demostración sin credenciales.
 - `SubmissionRepository`: borradores, envíos propios, preparación de revisiones y operaciones editoriales. El identificador de cada borrador funciona como clave de idempotencia; `reportId` mantiene el reporte y `baseRevisionId` impide enviar una edición obsoleta. Los accesos de autor y moderador se comprueban en el repositorio local, como simulación.
-- `PublicationRecord`: separa última revisión, revisión pública aprobada, disposición e historial privado. La proyección pública no entrega motivos editoriales, revisor, identificadores de acceso ni medios pendientes. La instantánea JSON v4 guarda esas piezas junto con `CommunityState` y `WorkflowState` y admite lectura de v1/v2/v3.
+- `PublicationRecord`: separa última revisión, revisión pública aprobada, disposición e historial privado. La proyección pública no entrega motivos editoriales, revisor, identificadores de acceso ni medios pendientes. La instantánea JSON v5 guarda esas piezas junto con `CommunityState`, `WorkflowState` y `SafetyState` y admite lectura de v1–v4.
 - `CommunityRepository`: contrato sustituible para confirmaciones, aportes, seguimiento y avisos. El adaptador local comparte almacenamiento y cola de escrituras con envíos para que aprobación y aviso se confirmen juntos. `PrototypeServices` permite inyectar ambos contratos y `CommunityScope` los lleva a las rutas de interfaz. Las fotos de los aportes usan el mismo `PhotoAdapter` simulado.
 - `FollowUpRepository`: contrato sustituible para gestiones y solución. `ManagementSummary` solo contiene los campos destinados a publicación; `ManagementDraft` conserva por separado información interna y una identidad estable de reintento. `ResolutionRecord` separa el candidato aprobado de la decisión de verificación y controla versiones obsoletas. Sus motivos de seguimiento se solicitan explícitamente como texto público revisado. `PrototypeServices` admite inyectar el contrato y la proyección pública lo comparte con comunidad.
 - `DraftStorage`: lectura y escritura de una instantánea JSON versionada. `PreferencesDraftStorage` usa un canal de plataforma hacia las preferencias privadas de Android; `MemoryDraftStorage` se usa en pruebas. La implementación Android escribe fuera del hilo de interfaz y confirma la escritura antes de devolver éxito. Las escrituras se serializan y se actualiza el estado observable después de guardarlo. Un autoguardado tardío no recrea un borrador enviado.
 - `LocationAdapter` y `PhotoAdapter`: sustituibles sin incorporar permisos ni dependencias nativas de cámara/GPS en esta entrega.
 - `DemoReportLink`: codifica y valida enlaces de demostración con solo el identificador. La lectura compartida reutiliza `ReportDetailPage` en modo `publicReading` y consulta el mismo `ReportRepository`; no crea una copia del reporte ni consulta datos privados. El portapapeles usa la API de Flutter, solo tras pulsar Copiar.
+- `SafetyRepository`: contrato inyectable para retiro y denuncias. El adaptador local conserva retiros por reporte, anonimiza la proyección y guarda decisiones de denuncia junto con el ocultamiento. `ownComplaints` no expone motivos internos ni identidad del revisor. Un futuro adaptador debe actualizar también la fuente de lectura pública, como hace el adaptador local.
 
 Inyectar implementaciones mediante `PrototypeServices` y `ReporteCiudadanoApp`. El modelo público sigue separando revisión editorial, disposición pública y seguimiento. Las fechas se guardan en UTC y se muestran en UTC−4 (`America/La_Paz`). El almacenamiento actual no está diseñado para información sensible ni para un piloto con usuarios reales.
 
@@ -177,13 +199,12 @@ La batería incluye regresión de consulta pública; validación de formularios;
 
 Las pruebas de la tercera entrega añaden corrección y publicación, edición pendiente con adjuntos, aprobación sin levantar ocultamiento, rechazo privado, duplicados y principal oculto, decisiones concurrentes, fallos de disco y migración v1. La interfaz de moderación se prueba al 200 % en 360 × 800, 390 × 844, 412 × 915 y 1440 × 900; también se comprueba la actualización del detalle y la lista abiertos.
 
-Los resultados históricos están en [Tercera entrega](docs/03_entrega_revision.md#verificación), [Cuarta entrega](docs/04_entrega_comunidad.md) y [Quinta entrega](docs/05_entrega_gestiones_solucion.md); el estado actual se documenta en [Sexta entrega](docs/06_entrega_lectura_publica.md). La recuperación tras reinicio se prueba recreando el repositorio sobre el almacenamiento de prueba. Esto no sustituye una prueba manual del cierre y apertura en un teléfono ni una auditoría con lector de pantalla. Retiro de autoría, denuncia de contenido, mapa y filtros completos siguen pendientes.
+Los resultados históricos se conservan en los documentos de entregas 03–06; el estado actual se documenta en [Octava entrega](docs/08_entrega_mapa_filtros.md). La recuperación tras reinicio se prueba recreando el repositorio sobre el almacenamiento de prueba. Esto no sustituye una prueba manual del cierre y apertura en un teléfono ni una auditoría con lector de pantalla. La cartografía real, el minimapa del detalle y el ajuste gráfico del punto de envío siguen pendientes.
 
-La sexta entrega añade 11 pruebas de formato de enlaces e interfaz a las 87 existentes. Los resultados de la ejecución completa, análisis y compilación se registran en su documento de entrega. No se ha ejecutado una validación manual en dispositivo ni compilado ARM en esta revisión.
+La séptima entrega añade ocho pruebas de repositorio y seis de interfaz a las 98 existentes. Los resultados de ejecución completa, análisis y compilación están en su documento de entrega. No se ha ejecutado una validación manual en dispositivo ni compilado ARM en esta revisión.
 
 ## Documentación de producto
 
 - [Instrucciones para agentes](AGENTS.md)
 - [Especificación v0.2](docs/01_especificacion_proyecto_v0.2.md)
 - [Diseño del prototipo v0.2](docs/02_prototipo_flutter_v0.2.md)
-

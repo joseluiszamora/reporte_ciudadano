@@ -101,7 +101,10 @@ class _HomeState extends State<_Home> {
       child: IndexedStack(
         index: _selected == 0 ? 0 : _selected - 1,
         children: [
-          ExplorePage(repository: widget.repository),
+          ExplorePage(
+            repository: widget.repository,
+            location: widget.services.location,
+          ),
           FollowingPage(onExplore: () => _select(0)),
           ProfilePage(
             services: widget.services,

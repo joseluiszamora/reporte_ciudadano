@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../domain/report.dart';
+import '../domain/explore_filter.dart';
 
 class DemoNotice extends StatelessWidget {
   const DemoNotice({super.key});
@@ -80,7 +81,7 @@ class ReportCard extends StatelessWidget {
             StatusBadge(report.tracking),
             const SizedBox(height: AppSpace.medium),
             Text(
-              'Última observación: ${boliviaDate(report.observedAt)}',
+              'Última observación: ${boliviaDate(latestObservation(report))}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             Text(

@@ -540,7 +540,7 @@ void main() {
         expectedVersion: repo.resolutionForReview(id).version,
         reason: 'Solución revisada',
       );
-      expect((jsonDecode(storage.value!) as Map)['version'], 4);
+      expect((jsonDecode(storage.value!) as Map)['version'], 5);
       final restored = LocalSubmissionRepository(
         session: session,
         storage: storage,
@@ -590,7 +590,7 @@ void main() {
     );
     final draft = await restored.createManagement(id);
     await restored.saveManagementDraft(draft);
-    expect((jsonDecode(storage.value!) as Map)['version'], 4);
+    expect((jsonDecode(storage.value!) as Map)['version'], 5);
     restored.dispose();
   });
 }

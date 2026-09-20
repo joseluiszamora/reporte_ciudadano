@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../safety/domain/safety_repository.dart';
+import '../../safety/presentation/safety_pages.dart';
+
 import '../../reports/domain/report.dart';
 import '../../reports/presentation/report_widgets.dart';
 import '../domain/session_repository.dart';
@@ -14,11 +17,13 @@ class SubmissionStatusPage extends StatefulWidget {
     required this.repository,
     required this.session,
     this.onRevise,
+    this.safety,
     super.key,
   });
   final String id;
   final SubmissionRepository repository;
   final SessionRepository session;
+  final SafetyRepository? safety;
   final Future<void> Function(ReportDraft draft)? onRevise;
   @override
   State<SubmissionStatusPage> createState() => _SubmissionStatusPageState();
@@ -60,6 +65,15 @@ class _SubmissionStatusPageState extends State<SubmissionStatusPage> {
             : FlowBody(
                 children: [
                   const DemoNotice(),
+                  if (widget.safety != null ||
+                      widget.repository is SafetyRepository)
+                    AuthorshipPanel(
+                      repository:
+                          widget.safety ??
+                          widget.repository as SafetyRepository,
+                      session: widget.session,
+                      reportId: item.reportId,
+                    ),
                   Text(
                     item.draft.title,
                     style: Theme.of(context).textTheme.headlineSmall,

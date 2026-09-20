@@ -5,6 +5,7 @@ abstract interface class LocationAdapter {
 }
 
 class DemoLocationAdapter implements LocationAdapter {
+  const DemoLocationAdapter();
   @override
   Future<GeoPoint?> request({required bool simulateDenial}) async =>
       simulateDenial ? null : const GeoPoint(-16.5000, -68.1600);

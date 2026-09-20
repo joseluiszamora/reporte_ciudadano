@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../safety/presentation/safety_pages.dart';
+
 import '../../reports/domain/report.dart';
 import '../../reports/presentation/report_detail_page.dart';
 import '../../reports/presentation/report_widgets.dart';
@@ -80,6 +82,20 @@ class _ParticipationPanelState extends State<ParticipationPanel> {
                 : 'Dejaste de seguir este reporte.',
           );
         }
+      } else if (action == 'complaint') {
+        final draft = scope.services.safety.createComplaint(widget.report.id);
+        if (mounted) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => ComplaintFormPage(
+                draft: draft,
+                repository: scope.services.safety,
+                session: scope.services.session,
+              ),
+            ),
+          );
+        }
       } else {
         final draft = await repo.createContribution(widget.report.id);
         if (mounted) {
@@ -136,6 +152,10 @@ class _ParticipationPanelState extends State<ParticipationPanel> {
           OutlinedButton(
             onPressed: _busy ? null : () => _action('contribute'),
             child: const Text('Aportar comentario o evidencia'),
+          ),
+          OutlinedButton(
+            onPressed: _busy ? null : () => _action('complaint'),
+            child: const Text('Denunciar contenido'),
           ),
           if (_message != null)
             Semantics(liveRegion: true, child: Text(_message!)),

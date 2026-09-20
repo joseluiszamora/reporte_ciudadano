@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:math';
 
+import '../../safety/domain/safety_repository.dart';
+import '../../safety/data/safety_state.dart';
+
 import '../../follow_up/domain/follow_up.dart';
 import '../../follow_up/domain/follow_up_repository.dart';
 import '../../follow_up/data/workflow_state.dart';
@@ -19,7 +22,7 @@ import '../domain/submission.dart';
 import '../domain/submission_repository.dart';
 
 class LocalSubmissionRepository extends SubmissionRepository
-    implements CommunityRepository, FollowUpRepository {
+    implements CommunityRepository, FollowUpRepository, SafetyRepository {
   LocalSubmissionRepository({
     required this.session,
     required this.storage,
@@ -34,6 +37,192 @@ class LocalSubmissionRepository extends SubmissionRepository
   final CommunityRules communityRules;
   CommunityState _community = CommunityState();
   WorkflowState _workflow = WorkflowState();
+  SafetyState _safety = SafetyState();
+
+  @override
+  int get complaintTextMax => communityRules.textMax;
+  @override
+  bool ownAuthorshipWithdrawn(String reportId) =>
+      session.current?.role == DemoRole.citizen &&
+      session.current?.id == _reportOwner(reportId) &&
+      _safety.withdrawals.containsKey(reportId);
+  @override
+  bool canWithdrawAuthorship(String reportId) =>
+      session.current?.role == DemoRole.citizen &&
+      session.current?.id == _reportOwner(reportId) &&
+      _records[reportId]?.approvedRevisionId != null &&
+      !_safety.withdrawals.containsKey(reportId);
+  @override
+  Future<void> withdrawAuthorship(String reportId) => _serial(() async {
+    final actor = _citizen();
+    if (_reportOwner(reportId) != actor.id ||
+        _records[reportId]?.approvedRevisionId == null) {
+      throw StateError(
+        'Solo el autor puede retirar la autoría de un reporte aprobado.',
+      );
+    }
+    if (_safety.withdrawals.containsKey(reportId)) return;
+    final event = ModerationEvent(
+      action: 'Autoría retirada',
+      reason: 'Solicitud explícita del autor en la demostración.',
+      actor: actor.id,
+      at: _clock().toUtc(),
+    );
+    await _commit(
+      {..._drafts},
+      {..._submissions},
+      {..._records},
+      _community,
+      _workflow,
+      _safety.copyWith(
+        withdrawals: {..._safety.withdrawals, reportId: event},
+        publicChanged: true,
+      ),
+    );
+  });
+  @override
+  ContentComplaint createComplaint(String reportId) => ContentComplaint(
+    id: _newId(),
+    reportId: reportId,
+    ownerId: _citizen().id,
+    createdAt: _clock().toUtc(),
+  );
+  @override
+  Future<void> submitComplaint(
+    ContentComplaint complaint, {
+    SendScenario scenario = SendScenario.normal,
+  }) => _serial(() async {
+    final actor = _citizen();
+    if (complaint.ownerId != actor.id) {
+      throw StateError('La denuncia no pertenece a esta sesión.');
+    }
+    final existing = _safety.complaints[complaint.id];
+    if (existing != null) {
+      if (existing.ownerId != actor.id ||
+          existing.reportId != complaint.reportId) {
+        throw StateError('Identificador no disponible.');
+      }
+      return;
+    }
+    await _visibleForCitizen(complaint.reportId, actor.id);
+    if (complaint.decision != null ||
+        complaint.details.length > complaintTextMax ||
+        (complaint.reason == ComplaintReason.other &&
+            complaint.details.trim().isEmpty)) {
+      throw ArgumentError('Revisa la explicación; Otro requiere detalles.');
+    }
+    if (scenario == SendScenario.offline ||
+        scenario == SendScenario.failBeforeSend) {
+      throw StateError(
+        'No se envió. Conserva el formulario abierto y reintenta.',
+      );
+    }
+    final received = ContentComplaint(
+      id: complaint.id,
+      reportId: complaint.reportId,
+      ownerId: actor.id,
+      createdAt: _clock().toUtc(),
+      reason: complaint.reason,
+      details: complaint.details.trim(),
+    );
+    await _commit(
+      {..._drafts},
+      {..._submissions},
+      {..._records},
+      _community,
+      _workflow,
+      _safety.copyWith(
+        complaints: {..._safety.complaints, complaint.id: received},
+      ),
+    );
+    if (scenario == SendScenario.lostResponse) {
+      throw StateError(
+        'Respuesta perdida. Reintenta: se recuperará la misma denuncia.',
+      );
+    }
+  });
+  @override
+  List<ContentComplaint> get ownComplaints => List.unmodifiable(
+    _safety.complaints.values
+        .where(
+          (c) =>
+              session.current?.role == DemoRole.citizen &&
+              c.ownerId == session.current?.id,
+        )
+        .map(
+          (c) => c.decision == null
+              ? c
+              : c.copyWith(
+                  decision: ModerationEvent(
+                    action: 'Revisión finalizada',
+                    reason: '',
+                    actor: '',
+                    at: c.decision!.at,
+                  ),
+                ),
+        ),
+  );
+  @override
+  List<ContentComplaint> get complaintsForReview {
+    _moderator();
+    return List.unmodifiable(_safety.complaints.values);
+  }
+
+  @override
+  bool canHideForComplaint(String reportId) {
+    _moderator();
+    return _records[reportId]?.approvedRevisionId != null;
+  }
+
+  @override
+  Future<void> resolveComplaint(
+    String id,
+    String reason, {
+    bool hideReport = false,
+  }) => _serial(() async {
+    final actor = _moderator();
+    final item = _safety.complaints[id];
+    if (item == null || item.decision != null) {
+      throw StateError('La denuncia ya fue revisada o no está disponible.');
+    }
+    if (reason.trim().isEmpty) {
+      throw ArgumentError('Escribe el motivo interno de la decisión.');
+    }
+    final event = ModerationEvent(
+      action: hideReport
+          ? 'Denuncia revisada · reporte oculto'
+          : 'Denuncia revisada · sin cambiar visibilidad',
+      reason: reason.trim(),
+      actor: actor.alias,
+      at: _clock().toUtc(),
+    );
+    final records = {..._records};
+    if (hideReport) {
+      if (!canHideForComplaint(item.reportId)) {
+        throw StateError(
+          'El catálogo es de lectura. Prueba el ocultamiento con un reporte local aprobado.',
+        );
+      }
+      final record = records[item.reportId]!;
+      records[item.reportId] = record.copyWith(
+        disposition: PublicDisposition.hidden,
+        history: [...record.history, event],
+      );
+    }
+    await _commit(
+      {..._drafts},
+      {..._submissions},
+      records,
+      _community,
+      _workflow,
+      _safety.copyWith(
+        complaints: {
+          ..._safety.complaints,
+          id: item.copyWith(decision: event),
+        },
+      ),
+    );
+  });
   @override
   int get maxManagementPhotos => rules.maxPhotos;
   final SessionRepository session;
@@ -47,14 +236,17 @@ class LocalSubmissionRepository extends SubmissionRepository
   int _publicVersion = 0;
   @override
   int get publicVersion =>
-      _publicVersion + _community.publicVersion + _workflow.publicVersion;
+      _publicVersion +
+      _community.publicVersion +
+      _workflow.publicVersion +
+      _safety.publicVersion;
   Future<void> _tail = Future.value();
 
   Future<void> load() async {
     final value = await storage.read();
     if (value == null) return;
     final json = jsonDecode(value) as Map<String, dynamic>;
-    if (![1, 2, 3, 4].contains(json['version'])) {
+    if (![1, 2, 3, 4, 5].contains(json['version'])) {
       throw const FormatException('Formato local desconocido');
     }
     final drafts = (json['drafts'] as List).map(
@@ -82,9 +274,12 @@ class LocalSubmissionRepository extends SubmissionRepository
     _community = (json['version'] as int) >= 3
         ? CommunityState.fromJson(json['community'] as Map<String, dynamic>)
         : CommunityState();
-    _workflow = json['version'] == 4
+    _workflow = (json['version'] as int) >= 4
         ? WorkflowState.fromJson(json['workflow'] as Map<String, dynamic>)
         : WorkflowState();
+    _safety = json['version'] == 5
+        ? SafetyState.fromJson(json['safety'] as Map<String, dynamic>)
+        : SafetyState();
   }
 
   DemoIdentity _identity() =>
@@ -147,11 +342,13 @@ class LocalSubmissionRepository extends SubmissionRepository
     Map<String, PublicationRecord>? records,
     CommunityState? community,
     WorkflowState? workflow,
+    SafetyState? safety,
   ]) async {
     final nextRecords = records ?? _records;
     await storage.write(
       jsonEncode({
-        'version': 4,
+        'version': 5,
+        'safety': (safety ?? _safety).toJson(),
         'workflow': (workflow ?? _workflow).toJson(),
         'community': (community ?? _community).toJson(),
         'drafts': drafts.values.map((d) => d.toJson()).toList(),
@@ -173,6 +370,7 @@ class LocalSubmissionRepository extends SubmissionRepository
     _records = nextRecords;
     _community = community ?? _community;
     _workflow = workflow ?? _workflow;
+    _safety = safety ?? _safety;
     notifyListeners();
   }
 
@@ -329,7 +527,9 @@ class LocalSubmissionRepository extends SubmissionRepository
       category: draft.category,
       zone: draft.zone.isEmpty ? 'Zona de demostración' : draft.zone,
       reference: draft.reference,
-      authorAlias: item.alias,
+      authorAlias: _safety.withdrawals.containsKey(reportId)
+          ? 'Autor anónimo'
+          : item.alias,
       observedAt: draft.observedAt,
       submittedAt: item.sentAt,
       publishedAt: record!.firstPublishedAt,
@@ -559,7 +759,7 @@ class LocalSubmissionRepository extends SubmissionRepository
         .where((c) => c.draft.reportId == report.id);
     PublicEvent event(Contribution c) => PublicEvent(
       c.decision!.at,
-      '${c.alias} · ${c.draft.kind.label}\n${c.draft.body}\nObservado: ${boliviaDate(c.draft.observedAt)}${c.draft.photos.isEmpty ? '' : '\nAdjuntos simulados aprobados:\n${c.draft.photos.join('\n')}'}',
+      '${_safety.withdrawals.containsKey(report.id) && c.draft.ownerId == _reportOwner(report.id) ? 'Autor anónimo' : c.alias} · ${c.draft.kind.label}\n${c.draft.body}\nObservado: ${boliviaDate(c.draft.observedAt)}${c.draft.photos.isEmpty ? '' : '\nAdjuntos simulados aprobados:\n${c.draft.photos.join('\n')}'}',
     );
     final dates = observations.map((o) => o.at).toList()..sort();
     return report.withCommunity(

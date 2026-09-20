@@ -2,6 +2,8 @@
 
 Fecha: 17 de septiembre de 2026. Fuentes: [especificación v0.2](01_especificacion_proyecto_v0.2.md), secciones 3, 4, 6 y 9–11; [diseño v0.2](02_prototipo_flutter_v0.2.md), pantalla P15. Ejecución Android: [README](../README.md#ejecutar).
 
+Este documento conserva el estado de 0.6.0. La continuación está en la [séptima entrega](07_entrega_privacidad_contenido.md).
+
 ## Alcance entregado
 
 Representación navegable de la lectura pública de un reporte dentro del prototipo Flutter. Se consulta sin cuenta, es adaptable y comparte contenido y visibilidad con el detalle de la aplicación. No se ha publicado una web ni iniciado el piloto.

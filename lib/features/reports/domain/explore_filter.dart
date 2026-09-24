@@ -43,6 +43,16 @@ class ExploreFilter {
   final Set<String> categories;
   final Set<TrackingStatus> statuses;
 
+  bool get defaultOpen =>
+      statuses.length == 3 &&
+      statuses.contains(TrackingStatus.reported) &&
+      statuses.contains(TrackingStatus.confirmed) &&
+      statuses.contains(TrackingStatus.solutionReported);
+
+  bool get allStatuses =>
+      statuses.length == TrackingStatus.values.length &&
+      statuses.containsAll(TrackingStatus.values);
+
   /// Fechas de calendario de Bolivia, sin componente de hora.
   final DateTime? from, until;
 

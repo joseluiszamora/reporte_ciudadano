@@ -32,10 +32,12 @@ flutter build apk --debug --target-platform android-x64
 
 ## Validación y pendientes
 
-Las pruebas nuevas comprueban filtros combinados, aislamiento de contenido no público, límites de fecha de Bolivia, observación comunitaria, cercanía y área; selección invalidada al retirar contenido, aplicar/cancelar filtros, alternar mapa/lista y GPS simulado. La interfaz se prueba al 200 % en 360 × 800, 390 × 844, 412 × 915 y 1440 × 900.
+Las pruebas nuevas comprueban filtros combinados, aislamiento de contenido no público, límites de fecha de Bolivia, observación comunitaria, cercanía y área; selección invalidada al retirar contenido, aplicar/cancelar filtros, alternar mapa/lista, GPS simulado y desplazamiento conservado al volver del detalle. La interfaz se prueba al 200 % en 360 × 800, 390 × 844, 412 × 915 y 1440 × 900.
 
-Resultados finales de análisis, regresión y compilación: pendientes de registrar al cerrar esta entrega.
+Comprobaciones de cierre: `flutter analyze` sin incidencias; `flutter test --reporter expanded` con **123 pruebas aprobadas** (112 anteriores y 11 nuevas); `flutter build apk --debug --target-platform android-x64` generó `build/app/outputs/flutter-apk/app-debug.apk`; `git diff --check` sin errores de espacios. Tras el ajuste de las etiquetas de estados y del modo mapa se volvieron a ejecutar análisis y pruebas pertinentes. No se realizó validación manual en teléfono.
 
 El recorrido 1 del diseño incorpora mapa esquemático; se conservan los otros nueve recorridos de las entregas previas. No se acredita cartografía real. Siguen pendientes el minimapa de detalle, el ajuste gráfico del punto de envío (el formulario conserva entrada manual de coordenadas), la validación manual integral en teléfono y lector de pantalla, y la compilación ARM. El proveedor cartográfico, fuente territorial y búsquedas geográficas siguen pendientes de decisión.
 
 La siguiente entrega debe completar las representaciones geográficas de detalle/envío y la validación del prototipo. El piloto requiere infraestructura y controles reales; esta entrega no lo habilita.
+
+Continuación: [novena entrega](09_entrega_ubicacion_validacion.md). Los pendientes anteriores describen el estado al cerrar esta octava entrega.

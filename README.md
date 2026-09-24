@@ -1,14 +1,20 @@
 # Reporte Ciudadano
 
-Prototipo Flutter **0.8.0** para consultar, enviar, revisar y seguir problemas persistentes de El Alto. Interfaz en español, orientada a Android. Usa únicamente datos ficticios, identificados como **Datos de demostración**.
+Prototipo Flutter **0.9.0** para consultar, enviar, revisar y seguir problemas persistentes de El Alto. Interfaz en español, orientada a Android. Usa únicamente datos ficticios, identificados como **Datos de demostración**.
 
-## Estado actual: octava entrega — mapa y filtros
+## Estado actual: novena entrega — punto ajustable y minimapa
+
+- **Reportar 2/3** ofrece un plano esquemático: tocarlo o usar flechas actualiza las coordenadas del borrador. La entrada manual y el escenario de GPS rechazado siguen disponibles.
+- El detalle público incorpora un minimapa esquemático de solo lectura para reportes visibles con punto válido.
+- Los diez recorridos del diseño tienen cobertura automatizada y se ejecutaron manualmente en un teléfono Android físico con datos ficticios. Resultados y límites: [Novena entrega](docs/09_entrega_ubicacion_validacion.md).
+
+### Capacidades conservadas de la octava entrega
 
 - Explorar alterna lista y mapa esquemático con marcadores agrupados y tarjetas públicas. Desplazamiento y zoom mediante botones accesibles; búsqueda explícita en el área.
 - Filtros combinables por categoría, seguimiento y fechas inclusivas de última observación en Bolivia. Conserva búsqueda, filtros y posiciones durante la navegación.
 - Ubicación simulada contextual, ensayo de rechazo y orden por cercanía. Sin proveedor cartográfico, calles, límites oficiales ni permisos GPS reales.
 
-Alcance y verificación: [Octava entrega](docs/08_entrega_mapa_filtros.md).
+Alcance y verificación histórica: [Octava entrega](docs/08_entrega_mapa_filtros.md).
 
 ### Capacidades conservadas de la séptima entrega
 
@@ -18,7 +24,7 @@ Alcance y verificación: [Octava entrega](docs/08_entrega_mapa_filtros.md).
 - El catálogo sigue siendo de lectura: admite recepción y cierre de revisión de denuncias, pero su ocultamiento se demuestra con reportes locales. No hay moderación granular independiente de un comentario/foto en esta entrega.
 - Persistencia **JSON v5**, compatible con v1–v4. Se conservan los datos previos y la identidad de reintento. Los vínculos internos de autoría siguen en el almacenamiento local; la política de retención del piloto está pendiente.
 
-Escenarios, alcance y comprobaciones: [Séptima entrega](docs/07_entrega_privacidad_contenido.md). La validación manual integral sigue pendiente; el prototipo aún no se considera completo.
+Escenarios, alcance y comprobaciones de esa entrega: [Séptima entrega](docs/07_entrega_privacidad_contenido.md). La validación manual de los recorridos se registra en la [novena entrega](docs/09_entrega_ubicacion_validacion.md).
 
 ### Capacidades conservadas de la sexta entrega
 
@@ -140,7 +146,7 @@ Más escenarios y cobertura: [Entrega de revisión y versiones](docs/03_entrega_
 | Envío a revisión | Transacción local simulada. No se comunica con moderadores ni autoridades reales. |
 | GPS | Adaptador simulado: punto fijo o permiso rechazado. No usa la ubicación del dispositivo. |
 | Cámara/galería | Fichas simuladas, sin fotografías ni acceso al dispositivo. No se procesa EXIF porque no se reciben imágenes reales. |
-| Territorio y coincidencias | Coordenadas de demostración y cálculo local de cercanía. Mapa esquemático local, sin cartografía real, geocodificación ni límites oficiales. |
+| Territorio y coincidencias | Coordenadas de demostración y cálculo local de cercanía. Mapa, minimapa y ajuste gráfico del punto esquemáticos; sin cartografía real, geocodificación ni límites oficiales. |
 | Moderación y publicación | Operaciones locales simuladas: cola, comparación, decisiones, correcciones, disposición pública y auditoría persistida. Sin controles de servidor. |
 | Gestiones y solución | Registro, borradores, revisión y versiones locales; propuesta, verificación y reapertura con historial. Entidades, evidencias y documentos ficticios; no hay recepción oficial, envío de reclamos ni certificación municipal. |
 | Confirmar, seguir y aportar | Operaciones locales: confirmación única y aportes revisados antes de publicación. |
@@ -152,7 +158,7 @@ Más escenarios y cobertura: [Entrega de revisión y versiones](docs/03_entrega_
 
 Los reportes públicos precargados son ficticios. Las gestiones y decisiones locales de seguimiento se aplican sobre ellos al cargar. Los borradores, envíos, publicaciones, decisiones, participaciones, gestiones, seguimientos y avisos creados por el usuario persisten únicamente en este dispositivo; borrar los datos de la app los elimina. El prototipo no recoge credenciales reales ni pide permisos GPS/cámara/push. No hay envío automático en segundo plano.
 
-No se incluyen funciones pospuestas como alertas temporales, zonas seguidas, selector de ciudades, rankings, chat o publicación web. Esta entrega no completa el prototipo ni habilita un piloto.
+No se incluyen funciones pospuestas como alertas temporales, zonas seguidas, selector de ciudades, rankings, chat o publicación web. Los diez recorridos principales tienen cobertura automatizada y se recorrieron en un teléfono Android físico con identidades simuladas; faltan la auditoría con lector de pantalla y las decisiones y controles necesarios para un piloto real.
 
 ## Organización y puntos de sustitución
 
@@ -199,9 +205,9 @@ La batería incluye regresión de consulta pública; validación de formularios;
 
 Las pruebas de la tercera entrega añaden corrección y publicación, edición pendiente con adjuntos, aprobación sin levantar ocultamiento, rechazo privado, duplicados y principal oculto, decisiones concurrentes, fallos de disco y migración v1. La interfaz de moderación se prueba al 200 % en 360 × 800, 390 × 844, 412 × 915 y 1440 × 900; también se comprueba la actualización del detalle y la lista abiertos.
 
-Los resultados históricos se conservan en los documentos de entregas 03–06; el estado actual se documenta en [Octava entrega](docs/08_entrega_mapa_filtros.md). La recuperación tras reinicio se prueba recreando el repositorio sobre el almacenamiento de prueba. Esto no sustituye una prueba manual del cierre y apertura en un teléfono ni una auditoría con lector de pantalla. La cartografía real, el minimapa del detalle y el ajuste gráfico del punto de envío siguen pendientes.
+Los resultados históricos se conservan en los documentos de entregas 03–08; el estado actual se documenta en [Novena entrega](docs/09_entrega_ubicacion_validacion.md). La recuperación tras reinicio se prueba recreando el repositorio sobre el almacenamiento de prueba. Esto no sustituye una prueba manual del cierre y apertura en un teléfono ni una auditoría con lector de pantalla. La cartografía real y la validación territorial siguen pendientes.
 
-La séptima entrega añade ocho pruebas de repositorio y seis de interfaz a las 98 existentes. Los resultados de ejecución completa, análisis y compilación están en su documento de entrega. No se ha ejecutado una validación manual en dispositivo ni compilado ARM en esta revisión.
+Los resultados actuales de pruebas, análisis, compilación ARM64 y comprobación en emulador están en la novena entrega. Las verificaciones históricas se conservan en cada documento; no equivalen a permisos ni seguridad de producción.
 
 ## Documentación de producto
 

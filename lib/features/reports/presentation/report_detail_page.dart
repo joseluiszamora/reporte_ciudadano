@@ -8,9 +8,11 @@ import '../../community/presentation/community_scope.dart';
 import '../../submissions/domain/session_repository.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../domain/explore_filter.dart';
 import '../domain/report.dart';
 import '../domain/report_repository.dart';
 import 'report_widgets.dart';
+import 'schematic_point_map.dart';
 
 class ReportDetailPage extends StatefulWidget {
   const ReportDetailPage({
@@ -290,8 +292,17 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                         context,
                         'Ubicación',
                         '${report.zone} · El Alto\n${report.reference}\n'
-                            'Referencia ficticia. Sin mapa ni validación territorial en esta entrega.',
+                            'Referencia ficticia. Sin validación territorial automática.',
                       ),
+                      if (report.point?.isValid == true)
+                        SchematicPointMap(
+                          key: const Key('detail-minimap'),
+                          area: ExploreArea(report.point!, span: .002),
+                          point: report.point,
+                          height: 170,
+                        )
+                      else
+                        const Text('Sin punto para mostrar en el minimapa.'),
                       _section(
                         context,
                         'Evidencia',
@@ -307,7 +318,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                             'Enviado: ${boliviaDate(report.submittedAt)}\n'
                             'Publicado: ${report.publishedAt == null ? 'Sin fecha' : boliviaDate(report.publishedAt!)}\n'
                             'Hora de Bolivia · America/La_Paz\n'
-                            '${report.confirmations} observadores independientes (simulados)',
+                            '${report.confirmations} ${report.confirmations == 1 ? 'observador independiente (simulado)' : 'observadores independientes (simulados)'}',
                       ),
                       if (report.lastCommunityObservedAt != null)
                         _section(

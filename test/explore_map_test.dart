@@ -5,6 +5,7 @@ import 'package:reporte_ciudadano/features/reports/domain/report.dart';
 import 'package:reporte_ciudadano/features/reports/domain/report_repository.dart';
 import 'package:reporte_ciudadano/features/reports/presentation/explore_page.dart';
 import 'package:reporte_ciudadano/features/reports/presentation/demo_report_map.dart';
+import 'package:reporte_ciudadano/features/reports/presentation/report_widgets.dart';
 
 class ChangingReports extends ChangeNotifier implements ReportRepository {
   List<Report> reports = demoReports();
@@ -51,6 +52,39 @@ Future<void> tap(WidgetTester tester, String text) async {
 }
 
 void main() {
+  testWidgets('Lista conserva desplazamiento al abrir y cerrar un detalle', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: ExplorePage(repository: DemoReportRepository())),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final list = find.byType(ListView).first;
+    await tester.drag(list, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    final scroll = find
+        .byWidgetPredicate(
+          (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+        )
+        .first;
+    final before = tester.state<ScrollableState>(scroll).position.pixels;
+    expect(before, greaterThan(0));
+    final card = find.byType(ReportCard).last;
+    await tester.ensureVisible(card);
+    await tester.pumpAndSettle();
+    final atOpen = tester.state<ScrollableState>(scroll).position.pixels;
+    await tester.tap(card);
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      tester.state<ScrollableState>(scroll).position.pixels,
+      closeTo(atOpen, 1),
+    );
+  });
+
   testWidgets(
     'Mapa comparte filtros, selección desaparece al retirar contenido',
     (tester) async {
@@ -64,8 +98,12 @@ void main() {
       await tap(tester, 'Ver mapa');
       final map = tester.widget<DemoReportMap>(find.byType(DemoReportMap));
       expect(map.reports.length, 5);
-      final marker = find.descendant(of: find.byType(DemoReportMap),
-        matching: find.byType(FilledButton)).first;
+      final marker = find
+          .descendant(
+            of: find.byType(DemoReportMap),
+            matching: find.byType(FilledButton),
+          )
+          .first;
       await tester.ensureVisible(marker);
       await tester.pumpAndSettle();
       expect(tester.getSize(marker), const Size(48, 48));

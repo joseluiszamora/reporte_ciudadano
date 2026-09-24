@@ -174,11 +174,17 @@ class _ExplorePageState extends State<ExplorePage> {
                 }),
               ),
               Text(
-                '${reports.length} reportes · ${_includeVerified ? 'Todos' : 'Abiertos'}',
+                '${reports.length} reportes · ${_filter.allStatuses
+                    ? 'Todos'
+                    : _filter.defaultOpen
+                    ? 'Abiertos'
+                    : 'Estados personalizados'}',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               Text(
-                _near == null
+                _map
+                    ? 'Mapa · Selecciona un marcador para ver sus reportes'
+                    : _near == null
                     ? 'Lista · Observaciones más recientes primero'
                     : 'Lista · Más cercanos a la ubicación de demostración',
                 style: TextStyle(fontSize: 14, color: AppColors.secondary),
@@ -201,7 +207,7 @@ class _ExplorePageState extends State<ExplorePage> {
               if (_filter.categories.isNotEmpty ||
                   _filter.from != null ||
                   _filter.until != null ||
-                  _filter.statuses.length != (_includeVerified ? 4 : 3))
+                  (!_filter.defaultOpen && !_filter.allStatuses))
                 Text(
                   'Filtros activos: ${_filter.categories.isEmpty ? 'Todas las categorías' : _filter.categories.join(', ')} · '
                   '${_filter.statuses.map((s) => s.label).join(', ')}'

@@ -36,10 +36,7 @@ void main() {
         find.text('Ya confirmaste · actualizar observación'),
       );
       await tapVisible(tester, find.text('Confirmar ahora'));
-      expect(
-        find.textContaining('1 observadores independientes'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('1 observador independiente'), findsOneWidget);
       await tapVisible(tester, find.text('Seguir reporte'));
       expect(services.community.isFollowing('1'), isTrue);
       await tester.tap(find.byType(BackButton));

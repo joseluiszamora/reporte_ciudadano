@@ -74,7 +74,7 @@ class DemoReportMap extends StatelessWidget {
                         child: Semantics(
                           label: entry.value.length == 1
                               ? 'Reporte: ${entry.value.single.publicRevision!.title}'
-                              : '${entry.value.length} reportes agrupados',
+                              : '${entry.value.length} reportes agrupados: ${entry.value.map((r) => r.publicRevision!.title).join(', ')}',
                           child: FilledButton(
                             style: FilledButton.styleFrom(
                               padding: EdgeInsets.zero,

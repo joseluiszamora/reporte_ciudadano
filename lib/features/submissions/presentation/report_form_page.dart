@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/geo_point.dart';
+import '../../reports/domain/explore_filter.dart';
 import '../../reports/domain/report.dart';
 import '../../reports/domain/report_repository.dart';
 import '../../reports/presentation/report_detail_page.dart';
 import '../../reports/presentation/report_widgets.dart';
+import '../../reports/presentation/schematic_point_map.dart';
 import '../domain/device_adapters.dart';
 import '../domain/find_matches.dart';
 import '../domain/session_repository.dart';
@@ -53,6 +56,7 @@ class _ReportFormPageState extends State<ReportFormPage> {
   int _saveVersion = 0;
   SendScenario _scenario = SendScenario.normal;
   ReportSubmission? _receipt;
+  late ExploreArea _mapArea;
   bool get _committed => widget.repository.ownSubmission(_draft.id) != null;
   ReportRules get _rules => widget.repository.rules;
 
@@ -60,6 +64,11 @@ class _ReportFormPageState extends State<ReportFormPage> {
   void initState() {
     super.initState();
     _draft = widget.draft;
+    _mapArea = ExploreArea(
+      _draft.point?.isValid == true
+          ? _draft.point!
+          : const GeoPoint(-16.5000, -68.1600),
+    );
     _title = TextEditingController(text: _draft.title);
     _description = TextEditingController(text: _draft.description);
     _latitude = TextEditingController(text: _draft.latitude);
@@ -125,6 +134,9 @@ class _ReportFormPageState extends State<ReportFormPage> {
       if (locationChanged) {
         _matchesChecked = false;
         _matches = [];
+        if (value.point?.isValid == true && !_mapArea.contains(value.point)) {
+          _mapArea = ExploreArea(value.point!);
+        }
       }
     });
     _save();
@@ -292,6 +304,7 @@ class _ReportFormPageState extends State<ReportFormPage> {
       }
       _latitude.text = point.latitude.toStringAsFixed(6);
       _longitude.text = point.longitude.toStringAsFixed(6);
+      _mapArea = ExploreArea(point);
       _change(
         _draft.copyWith(latitude: _latitude.text, longitude: _longitude.text),
         locationChanged: true,
@@ -567,8 +580,23 @@ class _ReportFormPageState extends State<ReportFormPage> {
 
   List<Widget> _location() => [
     const Text(
-      'El Alto\nAjusta el punto con coordenadas. No hay mapa ni límites oficiales validados. '
+      'El Alto\nAjusta el punto en el esquema o con coordenadas. No hay calles ni límites oficiales validados. '
       'Ejemplo ficticio: latitud -16.5000, longitud -68.1600.',
+    ),
+    const SizedBox(height: 16),
+    SchematicPointMap(
+      key: const Key('report-point-map'),
+      area: _mapArea,
+      point: _draft.point?.isValid == true ? _draft.point : null,
+      enabled: !_busy,
+      onPointChanged: (point) {
+        _latitude.text = point.latitude.toStringAsFixed(6);
+        _longitude.text = point.longitude.toStringAsFixed(6);
+        _change(
+          _draft.copyWith(latitude: _latitude.text, longitude: _longitude.text),
+          locationChanged: true,
+        );
+      },
     ),
     CheckboxListTile(
       contentPadding: EdgeInsets.zero,
